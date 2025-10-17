@@ -41,3 +41,19 @@ Cada execução da CLI — como:
 daa ocr run
 daa export
 daa eval
+```
+
+simboliza o gesto que estrutura essa proposta: levar o arquivo ao algoritmo, documentando cada etapa da transformação dos acervos históricos em dados digitais.
+
+## Colaboração e abertura
+
+O AbbCoLAB é um espaço de ciência colaborativa e aberta.
+Cada participante pode contribuir rodando a pipeline em seu próprio ambiente, revisando as transcrições automáticas e compartilhando os resultados curados.
+Essas contribuições alimentam continuamente o modelo AbbadiaT5, aprimorando sua capacidade de leitura e correção automática.
+
+> AbbCoLAB é uma iniciativa vinculada ao projeto “Do Arquivo ao Algoritmo”, dedicada à preservação, digitalização e interpretação automatizada de fontes históricas, com base em práticas colaborativas, éticas e reprodutíveis.
+
+## Licença
+
+Este repositório é distribuído sob a licença MIT.
+Sinta-se livre para utilizar, modificar e compartilhar, citando o projeto *Do Arquivo ao Algoritmo*.
