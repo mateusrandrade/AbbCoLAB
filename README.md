@@ -1,6 +1,6 @@
 # AbbCoLAB — Laboratório Colaborativo *Do Arquivo ao Algoritmo*
 
-> Transformar acervos em dados, e dados em conhecimento coletivo.
+> Do arquivo ao Algoritmo, da leitura à colaboração.
 
 ---
 
