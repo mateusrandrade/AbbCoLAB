@@ -19,16 +19,59 @@ def list_candidates_for_base(base: Path) -> Dict[str, Path]:
     return out
 
 EXPORT_FIELDS = [
-    "doc_id","source_image","num_candidates","has_curator","cer","wer","curator_len","input_len","candidates_present"
+    "doc_id","source_image","num_candidates","has_curator","cer","wer","curator_len","input_len",
+    "candidates_present","multi_hyp_mode","selected_candidates"
 ]
 
 @dataclass
 class Example:
     doc_id: str
-    input_text: str
     target_text: str
     candidates: Dict[str, str]
+    tagged_candidates: Dict[str, str]
     meta: Dict[str, Any]
+
+    def build_input(self, mode: str) -> Dict[str, Any]:
+        mode_normalized = (mode or "").strip().lower()
+        if mode_normalized == "concat":
+            joined = "\n".join(
+                self.tagged_candidates[key] for key in sorted(self.tagged_candidates.keys())
+            ).strip()
+            return {
+                "input_text": joined,
+                "selected_candidates": sorted(self.candidates.keys()),
+            }
+
+        if mode_normalized == "best":
+            if not self.candidates:
+                return {
+                    "input_text": "",
+                    "selected_candidates": [],
+                }
+
+            best_key: Optional[str] = None
+            best_scores: Optional[tuple[float, float, int]] = None
+            for key in sorted(self.candidates.keys()):
+                text = self.candidates[key]
+                cand_wer = float(wer(self.target_text, text)) if text else 1.0
+                cand_cer = float(cer(self.target_text, text)) if text else 1.0
+                score = (cand_cer, cand_wer, len(text or ""))
+                if best_scores is None or score < best_scores:
+                    best_scores = score
+                    best_key = key
+
+            assert best_key is not None  # for mypy
+            return {
+                "input_text": self.candidates[best_key],
+                "selected_candidates": [best_key],
+            }
+
+        if mode_normalized == "fuse":
+            raise ValueError("Modo multi_hyp='fuse' ainda não é suportado. Use concat ou best.")
+
+        raise ValueError(
+            "Modo multi_hyp='{mode}' inválido. Escolha entre concat ou best.".format(mode=mode)
+        )
 
 def make_example_for_image(img: Path, gold_suffix: str) -> Optional[Example]:
     base = base_for_image(img)
@@ -39,7 +82,7 @@ def make_example_for_image(img: Path, gold_suffix: str) -> Optional[Example]:
 
     cands_paths = list_candidates_for_base(base)
     candidates: Dict[str, str] = {}
-    parts: List[str] = []
+    tagged_candidates: Dict[str, str] = {}
 
     for key in sorted(cands_paths.keys()):
         txt = read_text_if_exists(cands_paths[key])
@@ -47,13 +90,15 @@ def make_example_for_image(img: Path, gold_suffix: str) -> Optional[Example]:
             candidates[key] = txt
             if key.startswith("tess_psm"):
                 psm = key.split("tess_psm")[-1]
-                parts.append(f"<tess psm={psm}> {txt} </tess>")
+                tagged = f"<tess psm={psm}> {txt} </tess>"
             elif key == "paddle":
-                parts.append(f"<paddle> {txt} </paddle>")
+                tagged = f"<paddle> {txt} </paddle>"
             elif key == "easy":
-                parts.append(f"<easy> {txt} </easy>")
+                tagged = f"<easy> {txt} </easy>"
+            else:
+                tagged = txt
 
-    input_text = "\n".join(parts).strip()
+            tagged_candidates[key] = tagged
 
     meta = {
         "source_image": str(img),
@@ -61,9 +106,9 @@ def make_example_for_image(img: Path, gold_suffix: str) -> Optional[Example]:
     }
     return Example(
         doc_id=base.name,
-        input_text=input_text,
         target_text=curator_text,
         candidates=candidates,
+        tagged_candidates=tagged_candidates,
         meta=meta
     )
 
@@ -84,15 +129,27 @@ def export_dataset(cfg: ExportConfig) -> Dict[str, Any]:
             continue
         found_curators += 1
 
-        _wer = float(wer(ex.target_text, ex.input_text)) if ex.input_text else 1.0
-        _cer = float(cer(ex.target_text, ex.input_text)) if ex.input_text else 1.0
+        try:
+            input_info = ex.build_input(cfg.multi_hyp)
+        except ValueError as exc:
+            raise SystemExit(str(exc))
+
+        input_text = input_info["input_text"]
+        selected_candidates = input_info["selected_candidates"]
+
+        _wer = float(wer(ex.target_text, input_text)) if input_text else 1.0
+        _cer = float(cer(ex.target_text, input_text)) if input_text else 1.0
+
+        meta = dict(ex.meta)
+        meta["multi_hyp_mode"] = cfg.multi_hyp
+        meta["selected_candidates"] = selected_candidates
 
         rows_export.append({
             "doc_id": ex.doc_id,
-            "input_text": ex.input_text,
+            "input_text": input_text,
             "target_text": ex.target_text,
             "candidates": ex.candidates,
-            "meta": ex.meta
+            "meta": meta
         })
 
         rows_manifest.append({
@@ -103,8 +160,10 @@ def export_dataset(cfg: ExportConfig) -> Dict[str, Any]:
             "cer": _cer,
             "wer": _wer,
             "curator_len": len(ex.target_text or ""),
-            "input_len": len(ex.input_text or ""),
-            "candidates_present": ";".join(ex.meta["candidates_keys"])
+            "input_len": len(input_text or ""),
+            "candidates_present": ";".join(ex.meta["candidates_keys"]),
+            "multi_hyp_mode": cfg.multi_hyp,
+            "selected_candidates": ";".join(selected_candidates),
         })
 
     if cfg.fail_if_no_gold and found_curators == 0:

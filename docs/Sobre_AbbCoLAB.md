@@ -39,9 +39,9 @@ pagina.curator.txt
 daa export   --input-dir data/colecao_01   --glob "**/*.jpg"   --out data/colecao_01/exports/abbadia_train.jsonl
 ```
 - 1 linha por página com `*.curator.txt` encontrado.
-- `input_text` = concat com tags dos candidatos (`<tess psm=..>…</tess>`, `<paddle>…</paddle>`, `<easy>…</easy>`).
+- `input_text` depende do `--multi-hyp`: `concat` (default) junta os candidatos com tags (`<tess psm=..>…</tess>`, `<paddle>…</paddle>`, `<easy>…</easy>`); `best` seleciona o candidato com menor CER em relação ao curator.
 - `target_text` = conteúdo do `*.curator.txt`.
-- Manifest de export (`export_manifest.csv/jsonl`) traz **CER/WER** por página.
+- Manifest de export (`export_manifest.csv/jsonl`) indica o modo (`multi_hyp_mode`) e o(s) candidato(s) usados.
 
 ### 4) Avaliação agregada
 ```bash
