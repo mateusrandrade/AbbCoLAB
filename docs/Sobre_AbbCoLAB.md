@@ -1,0 +1,65 @@
+
+# Do Arquivo ao Algoritmo — OCR CLI (v0.3.0)
+
+CLI colaborativa para **OCR multi-engine** (Tesseract + PaddleOCR + EasyOCR), curadoria humana (`*.curator.txt`) e exportação de dataset (`abbadia_train.jsonl`) para treinar o **AbbadiaT5** como pós-corretor/combinador.
+
+## Instalação (CPU)
+> Precisa do **binário do Tesseract** no sistema:
+- Ubuntu/Debian: `sudo apt-get install -y tesseract-ocr`
+- macOS: `brew install tesseract`
+- Windows: instalar via Chocolatey (`choco install tesseract`) ou MSI oficial.
+
+Depois:
+```bash
+python -m venv .venv && source .venv/bin/activate   # (Windows: .venv\Scripts\Activate.ps1)
+pip install -e ".[all-cpu]"
+```
+
+## Uso rápido
+### 1) OCR multi-engine (default: tesseract + paddle + easyocr)
+```bash
+daa ocr run   --input-dir data/colecao_01   --glob "**/*.jpg"   --lang por   --oem 3   --psm 3 4 6 11 12   --outputs txt
+```
+
+Gera por imagem:
+```
+pagina.tess.psm03.txt  pagina.tess.psm04.txt  pagina.tess.psm06.txt  pagina.tess.psm11.txt  pagina.tess.psm12.txt
+pagina.paddle.txt      pagina.paddle.json
+pagina.easy.txt        pagina.easy.json
+```
+
+### 2) Curadoria
+Crie **um arquivo por imagem** com a verdade revisada:
+```
+pagina.curator.txt
+```
+
+### 3) Exportar dataset para o AbbadiaT5
+```bash
+daa export   --input-dir data/colecao_01   --glob "**/*.jpg"   --out data/colecao_01/exports/abbadia_train.jsonl
+```
+- 1 linha por página com `*.curator.txt` encontrado.
+- `input_text` = concat com tags dos candidatos (`<tess psm=..>…</tess>`, `<paddle>…</paddle>`, `<easy>…</easy>`).
+- `target_text` = conteúdo do `*.curator.txt`.
+- Manifest de export (`export_manifest.csv/jsonl`) traz **CER/WER** por página.
+
+### 4) Avaliação agregada
+```bash
+daa eval   --input-dir data/colecao_01   --glob "**/*.jpg"   --out-dir data/colecao_01/exports/eval
+```
+Saídas:
+- `eval_by_page.csv` (CER/WER por candidato e página)
+- `eval_summary_by_engine_psm.csv` (médias por engine/psm)
+
+## GPU (opcional)
+- **EasyOCR (PyTorch)**: instale `torch` compatível com sua CUDA (site do PyTorch).
+- **PaddleOCR**: `paddlepaddle-gpu==<versão>` conforme sua CUDA (docs do Paddle). Use `daa ocr run --gpu true`.
+
+## Docker/Devcontainer
+Ambiente reprodutível:
+```bash
+docker build -t daa-ocr-cli:0.3.0 .
+docker run --rm -it -v $PWD/data:/data daa-ocr-cli:0.3.0 daa version
+```
+
+Consulte `docs/Guia_de_Curadoria.md`.

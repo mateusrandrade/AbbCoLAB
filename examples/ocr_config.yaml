@@ -1,0 +1,9 @@
+
+input_dir: data/colecao_01
+glob: "**/*.jpg"
+lang: por
+oem: 3
+psm: [3, 4, 6, 11, 12]
+outputs: [txt]
+write_manifest: true
+gold_suffix: ".curator.txt"
