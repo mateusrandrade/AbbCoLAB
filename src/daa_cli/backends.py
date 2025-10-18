@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 from .utils import run_cmd, write_json
 
 def run_tesseract(image: Path, lang: str, oem: int, psm_list: List[int], out_formats: List[str], dry_run: bool=False) -> List[Dict[str, Any]]:
@@ -33,11 +33,52 @@ def _safe_import(module: str):
     except Exception as e:
         return None
 
-def run_easyocr(image: Path, langs: List[str], gpu: bool=False) -> Dict[str, Any]:
+_easyocr_cache: Dict[Tuple[Tuple[str, ...], bool], Any] = {}
+_paddle_cache: Dict[Tuple[bool, str], Any] = {}
+
+
+def clear_easyocr_cache() -> None:
+    _easyocr_cache.clear()
+
+
+def clear_paddle_cache() -> None:
+    _paddle_cache.clear()
+
+
+def clear_ocr_caches() -> None:
+    clear_easyocr_cache()
+    clear_paddle_cache()
+
+
+def _get_easyocr_reader(langs: Tuple[str, ...], gpu: bool):
     easyocr = _safe_import("easyocr")
     if easyocr is None:
+        return None
+    key = (langs, bool(gpu))
+    reader = _easyocr_cache.get(key)
+    if reader is None:
+        reader = easyocr.Reader(list(langs), gpu=bool(gpu))
+        _easyocr_cache[key] = reader
+    return reader
+
+
+def _get_paddle_ocr(gpu: bool, lang: str):
+    paddleocr = _safe_import("paddleocr")
+    if paddleocr is None:
+        return None
+    key = (bool(gpu), lang)
+    ocr = _paddle_cache.get(key)
+    if ocr is None:
+        ocr = paddleocr.PaddleOCR(use_angle_cls=True, use_gpu=bool(gpu), lang=lang)
+        _paddle_cache[key] = ocr
+    return ocr
+
+
+def run_easyocr(image: Path, langs: List[str], gpu: bool=False) -> Dict[str, Any]:
+    langs_key = tuple(langs)
+    reader = _get_easyocr_reader(langs_key, gpu)
+    if reader is None:
         return {"engine":"easyocr","available":False,"error":"easyocr não instalado"}
-    reader = easyocr.Reader(langs, gpu=gpu)
     result = reader.readtext(str(image), detail=1)  # [ [bbox, text, conf], ... ]
     words = []
     lines = []
@@ -53,11 +94,10 @@ def run_easyocr(image: Path, langs: List[str], gpu: bool=False) -> Dict[str, Any
     return {"engine":"easyocr","available":True,"out_txt":str(txt_path),"out_json":str(json_path)}
 
 def run_paddle(image: Path, gpu: bool=False) -> Dict[str, Any]:
-    paddleocr = _safe_import("paddleocr")
-    if paddleocr is None:
+    ocr = _get_paddle_ocr(gpu, "pt")
+    if ocr is None:
         return {"engine":"paddle","available":False,"error":"paddleocr não instalado"}
-    OCR = paddleocr.PaddleOCR(use_angle_cls=True, use_gpu=gpu, lang="pt")
-    result = OCR.ocr(str(image), cls=True)
+    result = ocr.ocr(str(image), cls=True)
     words = []
     lines = []
     for page in result:
