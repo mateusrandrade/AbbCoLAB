@@ -46,7 +46,10 @@ def export_cmd(
     glob: str = typer.Option("**/*.jpg", help="Arquivos de imagem base"),
     out: str = typer.Option(..., help="Arquivo JSONL de saída (dataset AbbadiaT5)"),
     gold_suffix: str = typer.Option(".curator.txt", help="Sufixo dos textos revisados"),
-    multi_hyp: str = typer.Option("concat", help="concat (default) | best | fuse (futuros)"),
+    multi_hyp: str = typer.Option(
+        "concat",
+        help="Como combinar hipóteses: concat (tags), best (melhor CER) ou fuse (não suportado)",
+    ),
     fail_if_no_gold: bool = typer.Option(True, help="Falhar se nenhum curator for encontrado"),
 ):
     cfg = ExportConfig(
