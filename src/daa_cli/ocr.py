@@ -22,12 +22,15 @@ def ocr_batch(cfg: OCRConfig) -> Dict[str, Any]:
     rows_jsonl = []
     stats = {"images": len(files), "rows": 0}
 
+    tesseract_ver = None
+    if "tesseract" in cfg.engines:
+        tesseract_ver = tesseract_version()
+
     for img in files:
         sha = sha256_of_file(img)
 
         # Tesseract
         if "tesseract" in cfg.engines:
-            tver = tesseract_version()
             rows = run_tesseract(img, cfg.lang, cfg.oem, cfg.psm, cfg.outputs, cfg.dry_run)
             for row in rows:
                 append_csv(manifest_csv, MANIFEST_FIELDS, {
@@ -35,7 +38,7 @@ def ocr_batch(cfg: OCRConfig) -> Dict[str, Any]:
                     "source_path": str(img),
                     "source_sha256": sha,
                     "engine": "tesseract",
-                    "engine_version": tver,
+                    "engine_version": tesseract_ver,
                     "device": "cpu",
                     "lang": cfg.lang,
                     "oem": cfg.oem,
