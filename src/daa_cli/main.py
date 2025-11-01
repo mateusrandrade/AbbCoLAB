@@ -48,7 +48,7 @@ def export_cmd(
     gold_suffix: str = typer.Option(".curator.txt", help="Sufixo dos textos revisados"),
     multi_hyp: str = typer.Option(
         "concat",
-        help="Como combinar hipóteses: concat (tags), best (melhor CER) ou fuse (não suportado)",
+        help="Como montar o input_text a partir de múltiplos candidatos: 'concat' (default, concatena com tags), 'best' (escolhe o menor CER), 'fuse' (alinha e vota por coluna para gerar hipótese única).",
     ),
     fail_if_no_gold: bool = typer.Option(True, help="Falhar se nenhum curator for encontrado"),
 ):
