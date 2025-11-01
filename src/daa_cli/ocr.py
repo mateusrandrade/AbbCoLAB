@@ -51,15 +51,17 @@ def ocr_batch(cfg: OCRConfig) -> Dict[str, Any]:
                     "notes": ""
                 })
                 rows_jsonl.append({
-                    "engine":"tesseract",
-                    "psm":row.get("psm"),
-                    "format":row.get("format"),
-                    "exit_code":row.get("exit_code"),
-                    "duration_sec":row.get("duration_sec"),
-                    "stderr":row.get("stderr"),
-                    "out_path":row.get("out_path"),
-                    "source_path":str(img),
-                    "source_sha256":sha,
+                    "engine": "tesseract",
+                    "engine_version": tesseract_ver,
+                    "device": "cpu",
+                    "psm": row.get("psm"),
+                    "format": row.get("format"),
+                    "exit_code": row.get("exit_code"),
+                    "duration_sec": row.get("duration_sec"),
+                    "stderr": row.get("stderr"),
+                    "out_path": row.get("out_path"),
+                    "source_path": str(img),
+                    "source_sha256": sha,
                 })
                 stats["rows"] += 1
 
@@ -85,11 +87,13 @@ def ocr_batch(cfg: OCRConfig) -> Dict[str, Any]:
                 "notes": "" if available else "backend ausente"
             })
             rows_jsonl.append({
-                "engine":"paddle",
+                "engine": "paddle",
+                "engine_version": "",
+                "device": "cuda" if cfg.gpu else "cpu",
                 "available": available,
-                "out_txt": res.get("out_txt",""),
-                "out_json": res.get("out_json",""),
-                "error": res.get("error","") if not available else "",
+                "out_txt": res.get("out_txt", ""),
+                "out_json": res.get("out_json", ""),
+                "error": res.get("error", "") if not available else "",
                 "source_path": str(img),
                 "source_sha256": sha
             })
@@ -117,11 +121,13 @@ def ocr_batch(cfg: OCRConfig) -> Dict[str, Any]:
                 "notes": "" if available else "backend ausente"
             })
             rows_jsonl.append({
-                "engine":"easyocr",
+                "engine": "easyocr",
+                "engine_version": "",
+                "device": "cuda" if cfg.gpu else "cpu",
                 "available": available,
-                "out_txt": res.get("out_txt",""),
-                "out_json": res.get("out_json",""),
-                "error": res.get("error","") if not available else "",
+                "out_txt": res.get("out_txt", ""),
+                "out_json": res.get("out_json", ""),
+                "error": res.get("error", "") if not available else "",
                 "source_path": str(img),
                 "source_sha256": sha
             })

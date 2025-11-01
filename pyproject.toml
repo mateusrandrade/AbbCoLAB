@@ -1,7 +1,7 @@
 
 [project]
 name = "daa-ocr-cli"
-version = "0.3.0"
+version = "0.3.2"
 description = "CLI colaborativa para OCR multi-engine e export para o AbbadiaT5"
 authors = [{name="Do Arquivo ao Algoritmo Team"}]
 readme = "README.md"
