@@ -47,14 +47,16 @@ O capitão-mor da vila de São José foi nomeado em 18–
    `daa ocr run --input-dir <colecao> --glob "**/*.jpg"`  
    Saídas por página: `pagina.tess.psm03.txt`, `pagina.tess.psm04.txt`, `pagina.tess.psm06.txt`, `pagina.tess.psm11.txt`, `pagina.tess.psm12.txt`, `pagina.paddle.txt`, `pagina.easy.txt`.
 
-2. **Hipótese fundida automática**  
+2. **Hipótese fundida automática**
    Durante o `daa export`, a CLI gera `pagina.fuse.txt` **automaticamente** (por padrão), sem sobrescrever arquivos existentes.
+   Use `daa export --no-write-hypothesis ...` para pular essa etapa ou `--hypothesis-suffix "<novo>.txt"` para personalizar o nome.
 
 3. **Curadoria humana**  
    Edite `pagina.fuse.txt` e **salve como** `pagina.curator.txt`, aplicando as regras deste guia (reconstrução de palavras/frases, preservação de grafia histórica, normalização de mínimos).
 
-4. **Exportação para treino**  
-   `daa export --input-dir <colecao> --glob "**/*.jpg" --out abbadia_train.jsonl`  
+4. **Exportação para treino**
+   `daa export --input-dir <colecao> --glob "**/*.jpg" --out abbadia_train.jsonl`
+   - Flags úteis: `--no-write-hypothesis` (desativa a geração do `.fuse.txt`) e `--hypothesis-suffix "<novo>.txt"`.
    O export usa:
    - `target_text` ← conteúdo do `*.curator.txt` (ground truth);  
    - `candidates` ← todas as hipóteses (sempre salvas no JSONL);  
