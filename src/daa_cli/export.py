@@ -90,7 +90,7 @@ class Example:
             }
 
         raise ValueError(
-            "Modo multi_hyp='{mode}' inválido. Escolha entre concat ou best.".format(mode=mode)
+            "Modo multi_hyp='{mode}' inválido. Use 'concat', 'best' ou 'fuse'.".format(mode=mode)
         )
 
 
@@ -228,10 +228,19 @@ def _default_engine_weights(keys: List[str]) -> Dict[str, float]:
     return weights
 
 
+def _finalize_fused_text(text: str) -> str:
+    cleaned = re.sub(r"[ \t]+", " ", text)
+    cleaned = re.sub(r" ?\n ?", "\n", cleaned)
+    return unicodedata.normalize("NFC", cleaned.strip())
+
+
 def fuse_candidates(candidates: Dict[str, str], anchor_key: Optional[str] = None) -> str:
     filtered_candidates = {key: value for key, value in candidates.items() if value}
     if not filtered_candidates:
         return ""
+
+    if len(filtered_candidates) == 1:
+        return _finalize_fused_text(_normalize_for_alignment(next(iter(filtered_candidates.values()))))
 
     if anchor_key is None or anchor_key not in filtered_candidates:
         anchor_key = max(
@@ -245,6 +254,7 @@ def fuse_candidates(candidates: Dict[str, str], anchor_key: Optional[str] = None
     engine_weights = _default_engine_weights(list(filtered_candidates.keys()))
     fused_chars = [_vote_column(column, engine_weights, pivot_key) for column in columns]
     fused_text = "".join(fused_chars)
+    return _finalize_fused_text(fused_text)
     fused_text = re.sub(r"[ \t]+", " ", fused_text)
     fused_text = re.sub(r" ?\n ?", "\n", fused_text)
     return unicodedata.normalize("NFC", fused_text.strip())

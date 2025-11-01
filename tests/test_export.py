@@ -130,3 +130,15 @@ def test_fuse_candidates_handles_misaligned_lengths():
     fused = fuse_candidates(candidates, anchor_key="paddle")
 
     assert fused == "numero 123"
+
+
+def test_fuse_candidates_single_candidate_fast_path():
+    candidates = {
+        "paddle": " texto\ncom  espaços  ",
+    }
+
+    fused = fuse_candidates(candidates)
+
+    assert fused == "texto\ncom espaços"
+
+    assert fused == "numero 123"

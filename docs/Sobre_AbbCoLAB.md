@@ -40,8 +40,16 @@ daa export   --input-dir data/colecao_01   --glob "**/*.jpg"   --out data/coleca
 ```
 - 1 linha por página com `*.curator.txt` encontrado.
 - `input_text` depende do `--multi-hyp`: `concat` (default) junta os candidatos com tags (`<tess psm=..>…</tess>`, `<paddle>…</paddle>`, `<easy>…</easy>`); `best` seleciona o candidato com menor CER em relação ao curator; `fuse` alinha as hipóteses e vota posição a posição para propor um único texto fundido.
+
+| `--multi-hyp` | Estratégia | Quando usar |
+|---------------|------------|-------------|
+| `concat` | Concatena todas as hipóteses com tags de proveniência. | Ideal para treinar o AbbadiaT5 a combinar textos multi-engine. |
+| `best` | Escolhe apenas o candidato com menor CER em relação ao curator. | Útil em coleções homogêneas com um motor dominante. |
+| `fuse` | Alinha caractere a caractere e vota por coluna para gerar uma hipótese única já combinada. | Reduz o esforço de edição manual antes da curadoria colaborativa. |
+
 - `target_text` = conteúdo do `*.curator.txt`.
 - Manifest de export (`export_manifest.csv/jsonl`) indica o modo (`multi_hyp_mode`) e o(s) candidato(s) usados.
+  - A partir da v0.3.0, os manifests possuem as colunas `multi_hyp_mode` e `selected_candidates` para preservar compatibilidade com análises anteriores.
 
 ### 4) Avaliação agregada
 ```bash
