@@ -49,6 +49,7 @@ def export_cmd(
     multi_hyp: str = typer.Option(
         "concat",
         help="Como montar o input_text a partir de múltiplos candidatos: 'concat' (default, concatena com tags), 'best' (escolhe o menor CER), 'fuse' (alinha e vota por coluna para gerar hipótese única).",
+        help="Como combinar hipóteses: concat (tags), best (melhor CER) ou fuse (alinhamento + votação)",
     ),
     fail_if_no_gold: bool = typer.Option(True, help="Falhar se nenhum curator for encontrado"),
 ):

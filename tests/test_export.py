@@ -140,3 +140,5 @@ def test_fuse_candidates_single_candidate_fast_path():
     fused = fuse_candidates(candidates)
 
     assert fused == "texto\ncom espaços"
+
+    assert fused == "numero 123"

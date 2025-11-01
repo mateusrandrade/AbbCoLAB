@@ -255,6 +255,9 @@ def fuse_candidates(candidates: Dict[str, str], anchor_key: Optional[str] = None
     fused_chars = [_vote_column(column, engine_weights, pivot_key) for column in columns]
     fused_text = "".join(fused_chars)
     return _finalize_fused_text(fused_text)
+    fused_text = re.sub(r"[ \t]+", " ", fused_text)
+    fused_text = re.sub(r" ?\n ?", "\n", fused_text)
+    return unicodedata.normalize("NFC", fused_text.strip())
 
 def make_example_for_image(img: Path, gold_suffix: str) -> Optional[Example]:
     base = base_for_image(img)
