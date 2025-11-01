@@ -12,7 +12,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from daa_cli.config import ExportConfig
-from daa_cli.export import export_dataset
+from daa_cli.export import export_dataset, fuse_candidates
 
 
 def _prepare_sample_page(tmp_path: Path) -> Path:
@@ -84,7 +84,7 @@ def test_export_best_mode_uses_lowest_cer_candidate(tmp_path):
     assert manifest_rows[0]["input_len"] == len(dataset_rows[0]["input_text"])
 
 
-def test_export_fuse_mode_returns_friendly_error(tmp_path):
+def test_export_fuse_mode_merges_candidates(tmp_path):
     _prepare_sample_page(tmp_path)
 
     cfg = ExportConfig(
@@ -94,7 +94,39 @@ def test_export_fuse_mode_returns_friendly_error(tmp_path):
         multi_hyp="fuse",
     )
 
-    with pytest.raises(SystemExit) as excinfo:
-        export_dataset(cfg)
+    result = export_dataset(cfg)
 
-    assert "fuse" in str(excinfo.value)
+    dataset_rows = _read_jsonl(Path(result["out"]))
+    manifest_rows = _read_jsonl(Path(result["manifest_jsonl"]))
+
+    assert len(dataset_rows) == 1
+    assert dataset_rows[0]["input_text"] == "Texto correto"
+    assert dataset_rows[0]["meta"]["selected_candidates"] == ["paddle", "tess_psm03"]
+    assert dataset_rows[0]["meta"]["multi_hyp_mode"] == "fuse"
+
+    assert manifest_rows[0]["multi_hyp_mode"] == "fuse"
+    assert manifest_rows[0]["selected_candidates"] == "paddle;tess_psm03"
+    assert manifest_rows[0]["input_len"] == len(dataset_rows[0]["input_text"])
+
+
+def test_fuse_candidates_prefers_anchor_on_ties():
+    candidates = {
+        "paddle": "lago",
+        "tess_psm03": "lage",
+    }
+
+    fused = fuse_candidates(candidates, anchor_key="paddle")
+
+    assert fused == "lago"
+
+
+def test_fuse_candidates_handles_misaligned_lengths():
+    candidates = {
+        "paddle": "numero 123",
+        "tess_psm03": "numero123",
+        "easy": "nume ro 12 3",
+    }
+
+    fused = fuse_candidates(candidates, anchor_key="paddle")
+
+    assert fused == "numero 123"
