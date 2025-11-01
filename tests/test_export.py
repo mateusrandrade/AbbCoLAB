@@ -109,6 +109,59 @@ def test_export_fuse_mode_merges_candidates(tmp_path):
     assert manifest_rows[0]["input_len"] == len(dataset_rows[0]["input_text"])
 
 
+def test_export_writes_fused_hypothesis_by_default(tmp_path):
+    image = _prepare_sample_page(tmp_path)
+
+    cfg = ExportConfig(
+        input_dir=str(tmp_path),
+        glob="*.jpg",
+        out=str(tmp_path / "dataset_default_hyp.jsonl"),
+    )
+
+    result = export_dataset(cfg)
+
+    dataset_rows = _read_jsonl(Path(result["out"]))
+    assert len(dataset_rows) == 1
+
+    fused_path = image.with_suffix(".fuse.txt")
+    assert fused_path.exists()
+    assert fused_path.read_text(encoding="utf-8").strip() == "Texto correto"
+
+
+def test_export_skips_hypothesis_when_disabled(tmp_path):
+    image = _prepare_sample_page(tmp_path)
+
+    cfg = ExportConfig(
+        input_dir=str(tmp_path),
+        glob="*.jpg",
+        out=str(tmp_path / "dataset_no_hyp.jsonl"),
+        write_hypothesis=False,
+    )
+
+    export_dataset(cfg)
+
+    fused_path = image.with_suffix(".fuse.txt")
+    assert not fused_path.exists()
+
+
+def test_export_skips_hypothesis_with_single_candidate(tmp_path):
+    image = _prepare_sample_page(tmp_path)
+    tess_path = image.with_suffix(".tess.psm03.txt")
+    if tess_path.exists():
+        tess_path.unlink()
+
+    cfg = ExportConfig(
+        input_dir=str(tmp_path),
+        glob="*.jpg",
+        out=str(tmp_path / "dataset_single.jsonl"),
+    )
+
+    export_dataset(cfg)
+
+    fused_path = image.with_suffix(".fuse.txt")
+    assert not fused_path.exists()
+
+
 def test_fuse_candidates_prefers_anchor_on_ties():
     candidates = {
         "paddle": "lago",

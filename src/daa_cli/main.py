@@ -48,14 +48,23 @@ def export_cmd(
     gold_suffix: str = typer.Option(".curator.txt", help="Sufixo dos textos revisados"),
     multi_hyp: str = typer.Option(
         "concat",
-        help="Como montar o input_text a partir de múltiplos candidatos: 'concat' (default, concatena com tags), 'best' (escolhe o menor CER), 'fuse' (alinha e vota por coluna para gerar hipótese única).",
         help="Como combinar hipóteses: concat (tags), best (melhor CER) ou fuse (alinhamento + votação)",
     ),
     fail_if_no_gold: bool = typer.Option(True, help="Falhar se nenhum curator for encontrado"),
+    write_hypothesis: bool = typer.Option(
+        True,
+        "--write-hypothesis/--no-write-hypothesis",
+        help="Escreve hipótese fundida <base><sufixo> ao exportar (default: habilitado)",
+    ),
+    hypothesis_suffix: str = typer.Option(
+        ".fuse.txt",
+        help="Sufixo do arquivo de hipótese fundida gerado quando write_hypothesis estiver ativo",
+    ),
 ):
     cfg = ExportConfig(
         input_dir=input_dir, glob=glob, out=out,
-        gold_suffix=gold_suffix, multi_hyp=multi_hyp, fail_if_no_gold=fail_if_no_gold
+        gold_suffix=gold_suffix, multi_hyp=multi_hyp, fail_if_no_gold=fail_if_no_gold,
+        write_hypothesis=write_hypothesis, hypothesis_suffix=hypothesis_suffix,
     )
     res = export_dataset(cfg)
     rprint(res)

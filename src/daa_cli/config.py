@@ -26,6 +26,8 @@ class ExportConfig(BaseModel):
     gold_suffix: str = ".curator.txt"
     multi_hyp: str = "concat"
     fail_if_no_gold: bool = True
+    write_hypothesis: bool = True
+    hypothesis_suffix: str = ".fuse.txt"
 
 class EvalConfig(BaseModel):
     input_dir: str

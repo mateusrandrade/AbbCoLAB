@@ -39,6 +39,7 @@ pagina.curator.txt
 daa export   --input-dir data/colecao_01   --glob "**/*.jpg"   --out data/colecao_01/exports/abbadia_train.jsonl
 ```
 - 1 linha por página com `*.curator.txt` encontrado.
+- Gera `pagina.fuse.txt` por padrão (desative com `--no-write-hypothesis` ou personalize com `--hypothesis-suffix`).
 - `input_text` depende do `--multi-hyp`: `concat` (default) junta os candidatos com tags (`<tess psm=..>…</tess>`, `<paddle>…</paddle>`, `<easy>…</easy>`); `best` seleciona o candidato com menor CER em relação ao curator; `fuse` alinha as hipóteses e vota posição a posição para propor um único texto fundido.
 
 | `--multi-hyp` | Estratégia | Quando usar |

@@ -4,11 +4,14 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 import difflib
+import logging
 import re
 import unicodedata
 from jiwer import wer, cer
 from .config import ExportConfig
 from .utils import discover_images, base_for_image, read_text_if_exists, write_jsonl, append_csv, ensure_parent
+
+logger = logging.getLogger(__name__)
 
 def list_candidates_for_base(base: Path) -> Dict[str, Path]:
     out = {}
@@ -259,41 +262,52 @@ def fuse_candidates(candidates: Dict[str, str], anchor_key: Optional[str] = None
     fused_text = re.sub(r" ?\n ?", "\n", fused_text)
     return unicodedata.normalize("NFC", fused_text.strip())
 
-def make_example_for_image(img: Path, gold_suffix: str) -> Optional[Example]:
+def make_example_for_image(
+    img: Path,
+    gold_suffix: str,
+    candidate_texts: Optional[Dict[str, str]] = None,
+) -> Optional[Example]:
     base = base_for_image(img)
     curator = base.with_suffix(gold_suffix)
     curator_text = read_text_if_exists(curator)
     if curator_text is None:
         return None
 
-    cands_paths = list_candidates_for_base(base)
-    candidates: Dict[str, str] = {}
+    prepared_candidates: Dict[str, str] = {}
+    if candidate_texts is None:
+        cands_paths = list_candidates_for_base(base)
+        for key in sorted(cands_paths.keys()):
+            txt = read_text_if_exists(cands_paths[key])
+            if txt:
+                prepared_candidates[key] = txt
+    else:
+        for key, txt in candidate_texts.items():
+            if txt:
+                prepared_candidates[key] = txt
+
     tagged_candidates: Dict[str, str] = {}
+    for key in sorted(prepared_candidates.keys()):
+        txt = prepared_candidates[key]
+        if key.startswith("tess_psm"):
+            psm = key.split("tess_psm")[-1]
+            tagged = f"<tess psm={psm}> {txt} </tess>"
+        elif key == "paddle":
+            tagged = f"<paddle> {txt} </paddle>"
+        elif key == "easy":
+            tagged = f"<easy> {txt} </easy>"
+        else:
+            tagged = txt
 
-    for key in sorted(cands_paths.keys()):
-        txt = read_text_if_exists(cands_paths[key])
-        if txt:
-            candidates[key] = txt
-            if key.startswith("tess_psm"):
-                psm = key.split("tess_psm")[-1]
-                tagged = f"<tess psm={psm}> {txt} </tess>"
-            elif key == "paddle":
-                tagged = f"<paddle> {txt} </paddle>"
-            elif key == "easy":
-                tagged = f"<easy> {txt} </easy>"
-            else:
-                tagged = txt
-
-            tagged_candidates[key] = tagged
+        tagged_candidates[key] = tagged
 
     meta = {
         "source_image": str(img),
-        "candidates_keys": sorted(list(candidates.keys()))
+        "candidates_keys": sorted(list(prepared_candidates.keys()))
     }
     return Example(
         doc_id=base.name,
         target_text=curator_text,
-        candidates=candidates,
+        candidates=prepared_candidates,
         tagged_candidates=tagged_candidates,
         meta=meta
     )
@@ -310,7 +324,29 @@ def export_dataset(cfg: ExportConfig) -> Dict[str, Any]:
 
     found_curators = 0
     for img in files:
-        ex = make_example_for_image(img, cfg.gold_suffix)
+        base = base_for_image(img)
+        cands_paths = list_candidates_for_base(base)
+        candidate_texts: Dict[str, str] = {}
+        for key, path in cands_paths.items():
+            txt = read_text_if_exists(path)
+            if txt:
+                candidate_texts[key] = txt
+
+        if cfg.write_hypothesis and len(candidate_texts) >= 2:
+            anchor_key = max(
+                candidate_texts.keys(),
+                key=lambda key: len(_normalize_for_alignment(candidate_texts[key])),
+            )
+            fused_text = fuse_candidates(candidate_texts, anchor_key=anchor_key)
+            hypothesis_path = base.with_suffix(cfg.hypothesis_suffix)
+            if fused_text and not hypothesis_path.exists():
+                try:
+                    ensure_parent(hypothesis_path)
+                    hypothesis_path.write_text(fused_text, encoding="utf-8")
+                except Exception as exc:
+                    logger.warning("Falha ao escrever hipótese fundida %s: %s", hypothesis_path, exc)
+
+        ex = make_example_for_image(img, cfg.gold_suffix, candidate_texts=candidate_texts)
         if ex is None:
             continue
         found_curators += 1
