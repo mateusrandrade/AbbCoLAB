@@ -35,16 +35,29 @@ O capitão-mor da vila de São José foi nomeado em 18–
 
 ## Fluxo de trabalho
 
-### Fluxo de curadoria com hipótese fundida (.fuse.txt) → verdade revisada (.curator.txt)
-1. **Executar o OCR**: rode `daa ocr run` no conjunto desejado para gerar as leituras brutas por *engine* e combinação de PSM.
-2. **Listar os candidatos**: confirme os arquivos que serão exportados — as saídas ficam organizadas por *engine*/PSM e servem como referência para checar leituras divergentes.
-3. **Exportar a hipótese fundida**: utilize `daa export` no modo apropriado; além dos artefatos históricos, o comando passa a escrever o rascunho `<página>.fuse.txt` ao lado das imagens.
-4. **Editar a hipótese**: abra o `<página>.fuse.txt`, ajuste manualmente a leitura com base nos candidatos disponíveis e aplique as regras deste guia.
-5. **Salvar a verdade revisada**: quando a revisão estiver concluída, salve o resultado final como `<página>.curator.txt`. Apenas este arquivo representa a **verdade de referência**.
+### Fluxo de curadoria com hipótese fundida (`.fuse.txt`) → verdade revisada (`.curator.txt`)
 
-#### Campos preenchidos por `daa export`
-- **Modo `concat`**: `candidates` guarda todas as leituras concatenadas; `target_text` replica a união crua e `input_text` preserva o fluxo original de entrada.
-- **Modo `best`**: `candidates` indica a leitura escolhida automaticamente por *engine*/PSM; `target_text` traz a saída com maior confiança; `input_text` registra a combinação usada para comparação.
-- **Modo `fuse`**: `candidates` agrega os trechos que formam a hipótese fundida; `target_text` corresponde ao conteúdo salvo em `<página>.fuse.txt` e serve de rascunho; `input_text` armazena o material que alimentou a fusão.
+**Objetivo:** acelerar a revisão humana sem abrir mão da diversidade de saídas das diferentes engines de OCR.
 
-O arquivo `*.fuse.txt` é sempre um **ponto de partida**. Somente o `*.curator.txt`, revisado por humanos, deve ser tratado como *ground truth* e publicado.
+> A pipeline gera, ao lado de cada imagem, um arquivo **`pagina.fuse.txt`** contendo uma **hipótese combinada** (fusão) das leituras do Tesseract (vários PSM), PaddleOCR e EasyOCR.  
+> Esse arquivo é um **rascunho unificado** para facilitar a edição. A **verdade de referência** continua sendo o arquivo **`pagina.curator.txt`**.
+
+**Passo a passo**
+1. **OCR**  
+   `daa ocr run --input-dir <colecao> --glob "**/*.jpg"`  
+   Saídas por página: `pagina.tess.psm03.txt`, `pagina.tess.psm04.txt`, `pagina.tess.psm06.txt`, `pagina.tess.psm11.txt`, `pagina.tess.psm12.txt`, `pagina.paddle.txt`, `pagina.easy.txt`.
+
+2. **Hipótese fundida automática**  
+   Durante o `daa export`, a CLI gera `pagina.fuse.txt` **automaticamente** (por padrão), sem sobrescrever arquivos existentes.
+
+3. **Curadoria humana**  
+   Edite `pagina.fuse.txt` e **salve como** `pagina.curator.txt`, aplicando as regras deste guia (reconstrução de palavras/frases, preservação de grafia histórica, normalização de mínimos).
+
+4. **Exportação para treino**  
+   `daa export --input-dir <colecao> --glob "**/*.jpg" --out abbadia_train.jsonl`  
+   O export usa:
+   - `target_text` ← conteúdo do `*.curator.txt` (ground truth);  
+   - `candidates` ← todas as hipóteses (sempre salvas no JSONL);  
+   - `input_text`:
+     - `concat` (padrão): concatena com tags de proveniência (ideal para treino combinador);  
+     - `best`/`fuse`: o *data loader* reconstrói o `input_text` a partir de `candidates`, preservando a riqueza multi-engine no treino.
