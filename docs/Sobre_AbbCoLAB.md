@@ -39,7 +39,7 @@ pagina.curator.txt
 daa export   --input-dir data/colecao_01   --glob "**/*.jpg"   --out data/colecao_01/exports/abbadia_train.jsonl
 ```
 - 1 linha por página com `*.curator.txt` encontrado.
-- `input_text` depende do `--multi-hyp`: `concat` (default) junta os candidatos com tags (`<tess psm=..>…</tess>`, `<paddle>…</paddle>`, `<easy>…</easy>`); `best` seleciona o candidato com menor CER em relação ao curator.
+- `input_text` depende do `--multi-hyp`: `concat` (default) junta os candidatos com tags (`<tess psm=..>…</tess>`, `<paddle>…</paddle>`, `<easy>…</easy>`); `best` seleciona o candidato com menor CER em relação ao curator; `fuse` alinha as hipóteses e vota posição a posição para propor um único texto fundido.
 - `target_text` = conteúdo do `*.curator.txt`.
 - Manifest de export (`export_manifest.csv/jsonl`) indica o modo (`multi_hyp_mode`) e o(s) candidato(s) usados.
 

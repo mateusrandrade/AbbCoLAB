@@ -1,8 +1,11 @@
 
 from __future__ import annotations
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
+import difflib
+import re
+import unicodedata
 from jiwer import wer, cer
 from .config import ExportConfig
 from .utils import discover_images, base_for_image, read_text_if_exists, write_jsonl, append_csv, ensure_parent
@@ -31,6 +34,23 @@ class Example:
     tagged_candidates: Dict[str, str]
     meta: Dict[str, Any]
 
+    def _select_best_candidate_key(self) -> Optional[str]:
+        if not self.candidates:
+            return None
+
+        best_key: Optional[str] = None
+        best_scores: Optional[Tuple[float, float, int]] = None
+        for key in sorted(self.candidates.keys()):
+            text = self.candidates[key]
+            cand_wer = float(wer(self.target_text, text)) if text else 1.0
+            cand_cer = float(cer(self.target_text, text)) if text else 1.0
+            score = (cand_cer, cand_wer, len(text or ""))
+            if best_scores is None or score < best_scores:
+                best_scores = score
+                best_key = key
+
+        return best_key
+
     def build_input(self, mode: str) -> Dict[str, Any]:
         mode_normalized = (mode or "").strip().lower()
         if mode_normalized == "concat":
@@ -43,35 +63,191 @@ class Example:
             }
 
         if mode_normalized == "best":
-            if not self.candidates:
+            best_key = self._select_best_candidate_key()
+            if best_key is None:
                 return {
                     "input_text": "",
                     "selected_candidates": [],
                 }
 
-            best_key: Optional[str] = None
-            best_scores: Optional[tuple[float, float, int]] = None
-            for key in sorted(self.candidates.keys()):
-                text = self.candidates[key]
-                cand_wer = float(wer(self.target_text, text)) if text else 1.0
-                cand_cer = float(cer(self.target_text, text)) if text else 1.0
-                score = (cand_cer, cand_wer, len(text or ""))
-                if best_scores is None or score < best_scores:
-                    best_scores = score
-                    best_key = key
-
-            assert best_key is not None  # for mypy
             return {
                 "input_text": self.candidates[best_key],
                 "selected_candidates": [best_key],
             }
 
         if mode_normalized == "fuse":
-            raise ValueError("Modo multi_hyp='fuse' ainda não é suportado. Use concat ou best.")
+            if not self.candidates:
+                return {
+                    "input_text": "",
+                    "selected_candidates": [],
+                }
+
+            anchor = self._select_best_candidate_key()
+            fused = fuse_candidates(self.candidates, anchor_key=anchor)
+            return {
+                "input_text": fused,
+                "selected_candidates": sorted(self.candidates.keys()),
+            }
 
         raise ValueError(
             "Modo multi_hyp='{mode}' inválido. Escolha entre concat ou best.".format(mode=mode)
         )
+
+
+GAP_TOKEN = "\uFFFF"
+
+
+def _normalize_for_alignment(text: str) -> str:
+    if not text:
+        return ""
+
+    normalized = unicodedata.normalize("NFC", text)
+    normalized = normalized.replace("-\n", "")
+    normalized = re.sub(r"[ \t]+", " ", normalized)
+    return normalized.strip()
+
+
+def _tokenize(text: str) -> List[str]:
+    return list(text)
+
+
+def _align_tokens(
+    anchor_tokens: List[str],
+    candidate_tokens: List[str],
+) -> List[Tuple[str, Optional[str], bool]]:
+    matcher = difflib.SequenceMatcher(None, anchor_tokens, candidate_tokens, autojunk=False)
+    alignment: List[Tuple[str, Optional[str], bool]] = []
+    for tag, a0, a1, b0, b1 in matcher.get_opcodes():
+        if tag == "equal":
+            for idx in range(a1 - a0):
+                alignment.append((anchor_tokens[a0 + idx], candidate_tokens[b0 + idx], True))
+        elif tag == "replace":
+            len_a = a1 - a0
+            len_b = b1 - b0
+            length = max(len_a, len_b)
+            for idx in range(length):
+                if idx < len_a:
+                    anchor_char = anchor_tokens[a0 + idx]
+                    consumes_anchor = True
+                else:
+                    anchor_char = GAP_TOKEN
+                    consumes_anchor = False
+                candidate_char = candidate_tokens[b0 + idx] if idx < len_b else None
+                alignment.append((anchor_char, candidate_char, consumes_anchor))
+        elif tag == "delete":
+            for idx in range(a1 - a0):
+                alignment.append((anchor_tokens[a0 + idx], None, True))
+        elif tag == "insert":
+            for idx in range(b1 - b0):
+                alignment.append((GAP_TOKEN, candidate_tokens[b0 + idx], False))
+    return alignment
+
+
+def _progressive_align(candidates: Dict[str, str], order: List[str]) -> Tuple[List[Dict[str, str]], str]:
+    pivot_key = order[0]
+    pivot_tokens = _tokenize(_normalize_for_alignment(candidates[pivot_key]))
+    columns: List[Dict[str, str]] = [{pivot_key: ch} for ch in pivot_tokens]
+    aligned_pivot = pivot_tokens[:]
+
+    for key in order[1:]:
+        candidate_tokens = _tokenize(_normalize_for_alignment(candidates[key]))
+        aligned = _align_tokens(aligned_pivot, candidate_tokens)
+        new_columns: List[Dict[str, str]] = []
+        pivot_index = 0
+
+        for anchor_char, candidate_char, consumes_anchor in aligned:
+            if consumes_anchor:
+                column = dict(columns[pivot_index])
+                pivot_index += 1
+            else:
+                column = {pivot_key: ""}
+
+            column[key] = candidate_char or ""
+            new_columns.append(column)
+
+        columns = new_columns
+        aligned_pivot = [col.get(pivot_key, "") or GAP_TOKEN for col in columns]
+
+    return columns, pivot_key
+
+
+def _is_digit_like(ch: str) -> bool:
+    return bool(ch) and ch.isdigit()
+
+
+def _has_diacritic(ch: str) -> bool:
+    if not ch:
+        return False
+    decomposed = unicodedata.normalize("NFD", ch)
+    return any(unicodedata.category(c) == "Mn" for c in decomposed)
+
+
+def _vote_column(column: Dict[str, str], engine_weights: Dict[str, float], pivot_key: str) -> str:
+    scores: Dict[str, float] = {}
+    counts: Dict[str, int] = {}
+    anchor_char = column.get(pivot_key, "")
+
+    for key, char in column.items():
+        if not char:
+            continue
+        weight = engine_weights.get(key, 1.0)
+        if _is_digit_like(char):
+            weight += 0.25
+        if _has_diacritic(char):
+            weight += 0.15
+        scores[char] = scores.get(char, 0.0) + weight
+        counts[char] = counts.get(char, 0) + 1
+
+    if not scores:
+        return ""
+
+    best_score = max(scores.values())
+    best_chars = [char for char, score in scores.items() if score == best_score]
+    if len(best_chars) == 1:
+        chosen = best_chars[0]
+    elif anchor_char and anchor_char in best_chars:
+        chosen = anchor_char
+    else:
+        chosen = sorted(best_chars)[0]
+
+    if not anchor_char and chosen.isspace() and counts.get(chosen, 0) < 2:
+        return ""
+
+    return chosen
+
+
+def _default_engine_weights(keys: List[str]) -> Dict[str, float]:
+    weights: Dict[str, float] = {}
+    for key in keys:
+        if key.startswith("paddle") or key == "paddle":
+            weights[key] = 1.1
+        elif key.startswith("easy") or key == "easy":
+            weights[key] = 1.1
+        else:
+            weights[key] = 1.0
+    return weights
+
+
+def fuse_candidates(candidates: Dict[str, str], anchor_key: Optional[str] = None) -> str:
+    filtered_candidates = {key: value for key, value in candidates.items() if value}
+    if not filtered_candidates:
+        return ""
+
+    if anchor_key is None or anchor_key not in filtered_candidates:
+        anchor_key = max(
+            filtered_candidates.keys(),
+            key=lambda key: len(_normalize_for_alignment(filtered_candidates[key])),
+        )
+
+    order = [anchor_key] + [key for key in sorted(filtered_candidates.keys()) if key != anchor_key]
+    columns, pivot_key = _progressive_align(filtered_candidates, order)
+
+    engine_weights = _default_engine_weights(list(filtered_candidates.keys()))
+    fused_chars = [_vote_column(column, engine_weights, pivot_key) for column in columns]
+    fused_text = "".join(fused_chars)
+    fused_text = re.sub(r"[ \t]+", " ", fused_text)
+    fused_text = re.sub(r" ?\n ?", "\n", fused_text)
+    return unicodedata.normalize("NFC", fused_text.strip())
 
 def make_example_for_image(img: Path, gold_suffix: str) -> Optional[Example]:
     base = base_for_image(img)
