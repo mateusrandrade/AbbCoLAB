@@ -1,5 +1,5 @@
 
-# Do Arquivo ao Algoritmo — OCR CLI (v0.3.0)
+# Do Arquivo ao Algoritmo — OCR CLI (v0.3.2)
 
 CLI colaborativa para **OCR multi-engine** (Tesseract + PaddleOCR + EasyOCR), curadoria humana (`*.curator.txt`) e exportação de dataset (`abbadia_train.jsonl`) para treinar o **AbbadiaT5** como pós-corretor/combinador.
 
@@ -66,8 +66,8 @@ Saídas:
 ## Docker/Devcontainer
 Ambiente reprodutível:
 ```bash
-docker build -t daa-ocr-cli:0.3.0 .
-docker run --rm -it -v $PWD/data:/data daa-ocr-cli:0.3.0 daa version
+docker build -t daa-ocr-cli:0.3.2 .
+docker run --rm -it -v $PWD/data:/data daa-ocr-cli:0.3.2 daa version
 ```
 
 Consulte `docs/Guia_de_Curadoria.md`.

@@ -12,7 +12,7 @@ app = typer.Typer(help="Do Arquivo ao Algoritmo — OCR CLI")
 
 @app.command("version")
 def version():
-    rprint("[bold]daa-ocr-cli[/bold] v0.3.0")
+    rprint("[bold]daa-ocr-cli[/bold] v0.3.2")
 
 ocr_app = typer.Typer(help="Comandos de OCR")
 app.add_typer(ocr_app, name="ocr")

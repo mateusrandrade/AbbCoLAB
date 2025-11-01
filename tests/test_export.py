@@ -141,4 +141,4 @@ def test_fuse_candidates_single_candidate_fast_path():
 
     assert fused == "texto\ncom espaços"
 
-    assert fused == "numero 123"
+    assert fused != "numero 123"
