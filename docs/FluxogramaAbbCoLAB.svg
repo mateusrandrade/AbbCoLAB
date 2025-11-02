@@ -31,7 +31,7 @@
 
   <!-- 1. Imagem -->
   <g transform="translate(150,130)">
-    <rect width="600" height="80" class="box" rx="10"/>
+    <rect width="700" height="80" class="box" rx="10"/>
     <text x="20" y="26" class="title">1) Imagem digitalizada</text>
     <text x="20" y="52" class="body">arquivo .jpg (ou .png) — referência base para a página</text>
   </g>
@@ -40,7 +40,7 @@
 
   <!-- 2. OCR -->
   <g transform="translate(150,244)">
-    <rect width="600" height="140" class="box" rx="10"/>
+    <rect width="700" height="140" class="box" rx="10"/>
     <text x="20" y="26" class="title">2) OCR automático (Colaborador)</text>
     <text x="20" y="54" class="body">Comando: daa ocr run --input-dir ./colecao --glob "*.jpg"</text>
     <text x="20" y="78" class="body">Engines: Tesseract (PSM 03, 04, 06, 11, 12), PaddleOCR, EasyOCR</text>
@@ -51,7 +51,7 @@
 
   <!-- 3. Saídas OCR -->
   <g transform="translate(150,418)">
-    <rect width="600" height="150" class="box" rx="10"/>
+    <rect width="700" height="150" class="box" rx="10"/>
     <text x="20" y="26" class="title">3) Saídas OCR por página</text>
     <text x="20" y="54" class="body">pagina.tess.psm03.txt, pagina.tess.psm04.txt, pagina.tess.psm06.txt</text>
     <text x="20" y="54" class="body">pagina.tess.psm11.txt, pagina.tess.psm12.txt</text>
@@ -63,7 +63,7 @@
 
   <!-- 4. Fuse -->
   <g transform="translate(150,602)">
-    <rect width="600" height="128" class="box" rx="10"/>
+    <rect width="700" height="128" class="box" rx="10"/>
     <text x="20" y="26" class="title">4) Hipótese fundida (.fuse.txt)</text>
     <text x="20" y="54" class="body">Gerada automaticamente durante o export (alinhamento + votação multi-engine)</text>
     <text x="20" y="78" class="body">Arquivo: pagina.fuse.txt (rascunho para revisão humana)</text>
@@ -73,7 +73,7 @@
 
   <!-- 5. Curadoria -->
   <g transform="translate(150,764)">
-    <rect width="600" height="130" class="box" rx="10"/>
+    <rect width="700" height="130" class="box" rx="10"/>
     <text x="20" y="26" class="title">5) Curadoria humana (Colaborador)</text>
     <text x="20" y="54" class="body">Editar pagina.fuse.txt → corrigir erros de OCR, reconstruir palavras/frases,</text>
     <text x="20" y="78" class="body">preservar grafia histórica → salvar como pagina.curator.txt (ground truth)</text>
@@ -83,7 +83,7 @@
 
   <!-- 6. Export -->
   <g transform="translate(150,928)">
-    <rect width="600" height="170" class="box" rx="10"/>
+    <rect width="700" height="170" class="box" rx="10"/>
     <text x="20" y="26" class="title">6) Exportação centralizada (Coordenação)</text>
     <text x="20" y="54" class="body">Comando: daa export --input-dir ./colecao --glob "*.jpg" --out ./abbadia_train.jsonl</text>
     <text x="20" y="78" class="body">Monta dataset por página: candidates (Tesseract/Paddle/Easy), input_text, target_text</text>
@@ -94,14 +94,9 @@
 
   <!-- 7. Train -->
   <g transform="translate(150,1132)">
-    <rect width="600" height="150" class="box" rx="10"/>
+    <rect width="700" height="150" class="box" rx="10"/>
     <text x="20" y="26" class="title">7) Treinamento do AbbadiaT5 (Coordenação)</text>
     <text x="20" y="54" class="body">O loader reconstrói input com tags (&lt;tess/psm&gt; &lt;paddle&gt; &lt;easy&gt;) quando necessário,</text>
     <text x="20" y="78" class="body">garantindo aprendizado combinador multi-engine + pós-correção supervisionada.</text>
   </g>
-
-  <!-- Footer note -->
-  <text x="450" y="1320" text-anchor="middle" class="note">
-    Regra de ouro: uma imagem → N candidatos de OCR → 1 verdade humana (pagina.curator.txt) → dataset único e rastreável
-  </text>
 </svg>
