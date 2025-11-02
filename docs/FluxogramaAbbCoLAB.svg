@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="900" height="1480" viewBox="0 0 900 1480" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .box { fill:#ffffff; stroke:#2f3d4a; stroke-width:1.2; }
+      .title { font: 600 16px/1.2 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; fill:#1f2a33; }
+      .body { font: 400 13px/1.45 ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace; fill:#2a3640; }
+      .role { font: 600 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#5a6b7a; letter-spacing: .4px; text-transform: uppercase; }
+      .arrow { stroke:#7a8a99; stroke-width:1.2; marker-end:url(#arrowhead); fill:none; }
+      .note { font: 500 12px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; fill:#475866; }
+      .pill { fill:#eef2f6; stroke:#d5dee7; stroke-width:1; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+      <polygon points="0 0, 10 4, 0 8" fill="#7a8a99"/>
+    </marker>
+  </defs>
+
+  <!-- Header -->
+  <text x="450" y="40" text-anchor="middle" class="title" font-size="20">Fluxo AbbCoLAB — Do Arquivo ao Algoritmo</text>
+  <text x="450" y="64" text-anchor="middle" class="note">Do arquivo de imagem ao dataset para treino do AbbadiaT5</text>
+
+  <!-- Legend roles -->
+  <g>
+    <rect x="130" y="88" width="180" height="26" class="pill" rx="6"/>
+    <text x="220" y="106" text-anchor="middle" class="role">Colaborador</text>
+    <rect x="370" y="88" width="180" height="26" class="pill" rx="6"/>
+    <text x="460" y="106" text-anchor="middle" class="role">Curadoria Humana</text>
+    <rect x="610" y="88" width="180" height="26" class="pill" rx="6"/>
+    <text x="700" y="106" text-anchor="middle" class="role">Coordenação</text>
+  </g>
+
+  <!-- 1. Imagem -->
+  <g transform="translate(150,130)">
+    <rect width="600" height="80" class="box" rx="10"/>
+    <text x="20" y="26" class="title">1) Imagem digitalizada</text>
+    <text x="20" y="52" class="body">arquivo .jpg (ou .png) — referência base para a página</text>
+  </g>
+
+  <line x1="450" y1="210" x2="450" y2="244" class="arrow"/>
+
+  <!-- 2. OCR -->
+  <g transform="translate(150,244)">
+    <rect width="600" height="140" class="box" rx="10"/>
+    <text x="20" y="26" class="title">2) OCR automático (Colaborador)</text>
+    <text x="20" y="54" class="body">Comando: daa ocr run --input-dir ./colecao --glob "*.jpg"</text>
+    <text x="20" y="78" class="body">Engines: Tesseract (PSM 03, 04, 06, 11, 12), PaddleOCR, EasyOCR</text>
+    <text x="20" y="102" class="body">Saída técnica: ocr_manifest.csv / ocr_manifest.jsonl</text>
+  </g>
+
+  <line x1="450" y1="384" x2="450" y2="418" class="arrow"/>
+
+  <!-- 3. Saídas OCR -->
+  <g transform="translate(150,418)">
+    <rect width="600" height="150" class="box" rx="10"/>
+    <text x="20" y="26" class="title">3) Saídas OCR por página</text>
+    <text x="20" y="54" class="body">pagina.tess.psm03.txt, pagina.tess.psm04.txt, pagina.tess.psm06.txt, pagina.tess.psm11.txt, pagina.tess.psm12.txt</text>
+    <text x="20" y="78" class="body">pagina.paddle.txt, pagina.easy.txt</text>
+    <text x="20" y="102" class="body">Manifesto OCR: ocr_manifest.csv / ocr_manifest.jsonl</text>
+  </g>
+
+  <line x1="450" y1="568" x2="450" y2="602" class="arrow"/>
+
+  <!-- 4. Fuse -->
+  <g transform="translate(150,602)">
+    <rect width="600" height="128" class="box" rx="10"/>
+    <text x="20" y="26" class="title">4) Hipótese fundida (.fuse.txt)</text>
+    <text x="20" y="54" class="body">Gerada automaticamente durante o export (alinhamento + votação multi-engine)</text>
+    <text x="20" y="78" class="body">Arquivo: pagina.fuse.txt (rascunho para revisão humana)</text>
+  </g>
+
+  <line x1="450" y1="730" x2="450" y2="764" class="arrow"/>
+
+  <!-- 5. Curadoria -->
+  <g transform="translate(150,764)">
+    <rect width="600" height="130" class="box" rx="10"/>
+    <text x="20" y="26" class="title">5) Curadoria humana (Colaborador)</text>
+    <text x="20" y="54" class="body">Editar pagina.fuse.txt → corrigir erros de OCR, reconstruir palavras/frases,</text>
+    <text x="20" y="78" class="body">preservar grafia histórica → salvar como pagina.curator.txt (ground truth)</text>
+  </g>
+
+  <line x1="450" y1="894" x2="450" y2="928" class="arrow"/>
+
+  <!-- 6. Export -->
+  <g transform="translate(150,928)">
+    <rect width="600" height="170" class="box" rx="10"/>
+    <text x="20" y="26" class="title">6) Exportação centralizada (Coordenação)</text>
+    <text x="20" y="54" class="body">Comando: daa export --input-dir ./colecao --glob "*.jpg" --out ./abbadia_train.jsonl</text>
+    <text x="20" y="78" class="body">Monta dataset por página: candidates (Tesseract/Paddle/Easy), input_text, target_text</text>
+    <text x="20" y="102" class="body">Saídas: abbadia_train.jsonl, export_manifest.csv / export_manifest.jsonl</text>
+  </g>
+
+  <line x1="450" y1="1098" x2="450" y2="1132" class="arrow"/>
+
+  <!-- 7. Train -->
+  <g transform="translate(150,1132)">
+    <rect width="600" height="150" class="box" rx="10"/>
+    <text x="20" y="26" class="title">7) Treinamento do AbbadiaT5 (Coordenação)</text>
+    <text x="20" y="54" class="body">O loader reconstrói input com tags (&lt;tess/psm&gt; &lt;paddle&gt; &lt;easy&gt;) quando necessário,</text>
+    <text x="20" y="78" class="body">garantindo aprendizado combinador multi-engine + pós-correção supervisionada.</text>
+  </g>
+
+  <!-- Footer note -->
+  <text x="450" y="1320" text-anchor="middle" class="note">
+    Regra de ouro: uma imagem → N candidatos de OCR → 1 verdade humana (pagina.curator.txt) → dataset único e rastreável
+  </text>
+</svg>
