@@ -17,7 +17,7 @@
 
   <!-- Header -->
   <text x="450" y="40" text-anchor="middle" class="title" font-size="20">Fluxo AbbCoLAB — Do Arquivo ao Algoritmo</text>
-  <text x="450" y="64" text-anchor="middle" class="note">Do arquivo de imagem ao dataset para treino do AbbadiaT5</text>
+  <text x="450" y="64" text-anchor="middle" class="note">Do Arquivo ao Algoritmo, da leitura à colaboração.</text>
 
   <!-- Legend roles -->
   <g>
