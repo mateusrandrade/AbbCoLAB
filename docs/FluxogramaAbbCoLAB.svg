@@ -53,7 +53,8 @@
   <g transform="translate(150,418)">
     <rect width="600" height="150" class="box" rx="10"/>
     <text x="20" y="26" class="title">3) Saídas OCR por página</text>
-    <text x="20" y="54" class="body">pagina.tess.psm03.txt, pagina.tess.psm04.txt, pagina.tess.psm06.txt, pagina.tess.psm11.txt, pagina.tess.psm12.txt</text>
+    <text x="20" y="54" class="body">pagina.tess.psm03.txt, pagina.tess.psm04.txt, pagina.tess.psm06.txt</text>
+    <text x="20" y="54" class="body">pagina.tess.psm11.txt, pagina.tess.psm12.txt</text>
     <text x="20" y="78" class="body">pagina.paddle.txt, pagina.easy.txt</text>
     <text x="20" y="102" class="body">Manifesto OCR: ocr_manifest.csv / ocr_manifest.jsonl</text>
   </g>
