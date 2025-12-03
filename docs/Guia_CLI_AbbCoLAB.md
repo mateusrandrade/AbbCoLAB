@@ -17,10 +17,85 @@ A `daa-ocr-cli` (v0.3.2) é a interface em linha de comando do AbbCoLAB para rod
 | **PaddleOCR / EasyOCR (opcionais)** | Engines adicionais de OCR | Instaladas via `pip` pelo extra `all-cpu`; GPU requer builds específicos |
 | **(Opcional) GPU** | Aceleração para PaddleOCR/EasyOCR | Instale `torch` ou `paddlepaddle-gpu` compatíveis com sua CUDA |
 
+> **CPU x GPU x CUDA (em linguagem simples)**
+> - **CPU:** é o processador central (faz tudo, mas com menos velocidade para tarefas grandes de IA).
+> - **GPU:** é a placa de vídeo. Ela tem muitos núcleos e acelera redes neurais (OCR mais rápido).
+> - **CUDA:** é o "driver de aceleração" da NVIDIA que permite a programas (como PyTorch/Paddle) usarem a GPU. Só funciona em GPUs NVIDIA e requer drivers atualizados.
+
 > A CLI já prepara saídas e manifests mesmo sem GPU; o uso de GPU é apenas para acelerar PaddleOCR e EasyOCR.
 
 ---
 
+## Etapa 1 – Preparar o ambiente Python (passo a passo para iniciantes)
+
+### 1.1 Instalar o Python
+- **Windows (recomendado via instalador oficial):**
+  1. Acesse [python.org/downloads](https://www.python.org/downloads/) e clique em **Download Python 3.x.x**.
+  2. Abra o instalador e marque a opção **Add Python to PATH** antes de clicar em **Install Now**.
+  3. Quando terminar, abra o **PowerShell** e confirme a instalação:
+     ```powershell
+     python --version
+     pip --version
+     ```
+     Você deve ver algo como `Python 3.11.x` e `pip 24.x.x`.
+
+- **macOS (Homebrew):**
+  1. Abra o **Terminal**.
+  2. Instale o Homebrew (se ainda não tiver) conforme <https://brew.sh>.
+  3. Instale o Python e confirme:
+     ```bash
+     brew install python
+     python3 --version
+     python3 -m pip --version
+     ```
+
+- **Linux (Ubuntu/Debian):**
+  ```bash
+  sudo apt update
+  sudo apt install -y python3 python3-venv python3-pip
+  python3 --version
+  python3 -m pip --version
+  ```
+
+> Dica: Se já tiver Python instalado, apenas confirme as versões. A CLI funciona a partir do Python 3.9.
+
+### 1.2 Criar e ativar um ambiente virtual (para isolar as dependências)
+1. No terminal/powershell, navegue até a pasta onde o projeto está salvo (ex.: `cd C:\\Projetos\\abbcolab` ou `cd ~/Projetos/abbcolab`).
+2. Crie o ambiente virtual:
+   - Windows: `python -m venv .venv`
+   - macOS/Linux: `python3 -m venv .venv`
+3. Ative o ambiente virtual:
+   - Windows (PowerShell): `.\\.venv\\Scripts\\Activate.ps1`
+   - macOS/Linux: `source .venv/bin/activate`
+4. Atualize o `pip` dentro do ambiente virtual:
+   ```bash
+   python -m pip install --upgrade pip
+   ```
+
+Você saberá que o ambiente está ativo ao ver `(.venv)` no início da linha do terminal.
+
+### 1.3 Instalar dependências da CLI
+Com o ambiente virtual ativo, instale a CLI e os pacotes de CPU:
+```bash
+pip install -e '.[all-cpu]'
+```
+
+- Esse comando instala a própria CLI (`daa`) e as dependências de OCR em modo CPU.
+- **Se for usar GPU (PaddleOCR/EasyOCR):** antes do comando acima, instale **uma** biblioteca de GPU compatível:
+  - **PyTorch** (para EasyOCR): escolha a versão conforme sua CUDA em <https://pytorch.org/get-started/locally/>. Exemplo (CUDA 12.1):
+    ```bash
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+    ```
+  - **PaddlePaddle GPU** (para PaddleOCR): escolha a versão conforme sua CUDA em <https://www.paddlepaddle.org.cn/>. Exemplo (Linux, CUDA 11.x):
+    ```bash
+    pip install paddlepaddle-gpu==2.6.1 -f https://www.paddlepaddle.org.cn/whl/linux/gpu
+    ```
+  - **Como saber sua CUDA/GPU?** Se tiver driver NVIDIA instalado, rode `nvidia-smi` no terminal (Linux/Windows). Se não houver GPU NVIDIA, instale apenas em CPU.
+  - Depois de instalar `torch` **ou** `paddlepaddle-gpu`, finalize com:
+    ```bash
+    pip install -e '.[all-cpu]'
+    ```
+    para registrar a CLI e demais dependências no mesmo ambiente virtual.
 ## Etapa 1 – Preparar o ambiente Python
 1. Crie e ative um ambiente virtual:
    - Linux/macOS: `python -m venv .venv && source .venv/bin/activate`
