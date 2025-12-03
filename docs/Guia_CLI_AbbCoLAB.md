@@ -1,0 +1,101 @@
+# Como usar o AbbCoLAB CLI (daa-ocr-cli)
+
+Guia completo para instalar, configurar e utilizar a CLI do **AbbCoLAB** em ambiente Windows, macOS ou Linux, mesmo que você **nunca tenha usado Python antes**.
+
+---
+
+## O que é o AbbCoLAB CLI?
+A `daa-ocr-cli` (v0.3.2) é a interface em linha de comando do AbbCoLAB para rodar OCR multi-engine (Tesseract, PaddleOCR, EasyOCR), registrar curadoria humana (`*.curator.txt`), exportar datasets JSONL para treinar o modelo AbbadiaT5 e calcular métricas agregadas (CER/WER).
+
+---
+
+## Requisitos básicos
+| Componente | Função | Onde obter |
+|------------|--------|-----------|
+| **Python 3.9+** | Necessário para rodar a CLI | [python.org/downloads](https://www.python.org/downloads/) |
+| **Tesseract** (obrigatório) | Engine principal de OCR | `apt-get install tesseract-ocr` (Ubuntu/Debian); `brew install tesseract` (macOS); `choco install tesseract` ou MSI (Windows) |
+| **PaddleOCR / EasyOCR (opcionais)** | Engines adicionais de OCR | Instaladas via `pip` pelo extra `all-cpu`; GPU requer builds específicos |
+| **(Opcional) GPU** | Aceleração para PaddleOCR/EasyOCR | Instale `torch` ou `paddlepaddle-gpu` compatíveis com sua CUDA |
+
+> A CLI já prepara saídas e manifests mesmo sem GPU; o uso de GPU é apenas para acelerar PaddleOCR e EasyOCR.
+
+---
+
+## Etapa 1 – Preparar o ambiente Python
+1. Crie e ative um ambiente virtual:
+   - Linux/macOS: `python -m venv .venv && source .venv/bin/activate`
+   - Windows (PowerShell): `python -m venv .venv && .\\.venv\\Scripts\\Activate.ps1`
+2. Instale as dependências de CPU:
+   ```bash
+   pip install -e ".[all-cpu]"
+   ```
+3. (Opcional) GPU: instale `torch` ou `paddlepaddle-gpu==<versão>` compatíveis com sua CUDA antes de usar `--gpu true`.
+
+---
+
+## Etapa 2 – Executar OCR multi-engine
+Com o venv ativo, rode:
+```bash
+daa ocr run \
+  --input-dir data/colecao_01 \
+  --glob "**/*.jpg" \
+  --lang por \
+  --oem 3 \
+  --psm 3 4 6 11 12 \
+  --outputs txt \
+  --engines tesseract paddle easyocr \
+  --gpu false
+```
+
+- Saídas por imagem: `*.tess.psmXX.txt`, `*.paddle.txt/.json`, `*.easy.txt/.json`.
+- A CLI grava manifestos CSV/JSONL em `manifests/ocr_manifest.*` por padrão.
+
+---
+
+## Etapa 3 – Fazer a curadoria manual
+Revise cada página criando um arquivo `*.curator.txt` na mesma pasta da imagem (um por página). Ex.: `pagina.curator.txt` contendo a transcrição corrigida.
+
+---
+
+## Etapa 4 – Exportar dataset para o AbbadiaT5
+Gere o JSONL consolidado (uma linha por página com curator encontrado):
+```bash
+daa export \
+  --input-dir data/colecao_01 \
+  --glob "**/*.jpg" \
+  --out data/colecao_01/exports/abbadia_train.jsonl \
+  --multi-hyp concat \
+  --gold-suffix .curator.txt
+```
+
+- `concat` (padrão) junta candidatos com tags; `best` pega o menor CER; `fuse` alinha e vota caractere a caractere.
+- Por padrão, também grava `pagina.fuse.txt`; desative com `--no-write-hypothesis` ou mude o sufixo com `--hypothesis-suffix`.
+- O manifest (`export_manifest.csv/jsonl`) traz `multi_hyp_mode` e `selected_candidates` para auditoria.
+
+---
+
+## Etapa 5 – Avaliar a coleção
+Calcule CER/WER por página e resumos por engine/PSM:
+```bash
+daa eval \
+  --input-dir data/colecao_01 \
+  --glob "**/*.jpg" \
+  --gold-suffix .curator.txt \
+  --out-dir data/colecao_01/exports/eval
+```
+
+Saídas esperadas:
+- `eval_by_page.csv` (CER/WER por candidato e página)
+- `eval_summary_by_engine_psm.csv` (médias por engine/psm)
+
+---
+
+## Dicas rápidas
+- Use `daa version` para conferir a versão da CLI (v0.3.2).
+- `--gpu true` acelera PaddleOCR/EasyOCR se você tiver CUDA instalada; Tesseract roda sempre em CPU.
+- Ajuste `--outputs` para `txt`, `tsv`, `hocr` ou `pdf` conforme a necessidade.
+- Garanta que o Tesseract esteja no PATH antes de iniciar o OCR; é o único requisito obrigatório listado na instalação.
+
+---
+
+Pronto! Agora você pode rodar o AbbCoLAB CLI, curar as transcrições e exportar datasets para treinar o AbbadiaT5.
