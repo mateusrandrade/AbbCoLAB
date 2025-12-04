@@ -96,15 +96,6 @@ pip install -e '.[all-cpu]'
     pip install -e '.[all-cpu]'
     ```
     para registrar a CLI e demais dependências no mesmo ambiente virtual.
-## Etapa 1 – Preparar o ambiente Python
-1. Crie e ative um ambiente virtual:
-   - Linux/macOS: `python -m venv .venv && source .venv/bin/activate`
-   - Windows (PowerShell): `python -m venv .venv && .\\.venv\\Scripts\\Activate.ps1`
-2. Instale as dependências de CPU:
-   ```bash
-   pip install -e ".[all-cpu]"
-   ```
-3. (Opcional) GPU: instale `torch` ou `paddlepaddle-gpu==<versão>` compatíveis com sua CUDA antes de usar `--gpu true`.
 
 ---
 
