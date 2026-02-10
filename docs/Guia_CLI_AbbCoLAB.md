@@ -5,7 +5,7 @@ Guia completo para instalar, configurar e utilizar a CLI do **AbbCoLAB** em ambi
 ---
 
 ## O que é o AbbCoLAB CLI?
-A `daa-ocr-cli` (v0.3.2) é a interface em linha de comando do AbbCoLAB para rodar OCR multi-engine (Tesseract, PaddleOCR, EasyOCR), registrar curadoria humana (`*.curator.txt`), exportar datasets JSONL para treinar o modelo AbbadiaT5 e calcular métricas agregadas (CER/WER).
+A `daa-ocr-cli` (v0.3.2) é a interface em linha de comando do AbbCoLAB para rodar OCR multi-engine (Tesseract, PaddleOCR, EasyOCR e DeepSeek-OCR), registrar curadoria humana (`*.curator.txt`), exportar datasets JSONL para treinar o modelo AbbadiaT5 e calcular métricas agregadas (CER/WER).
 
 ---
 
@@ -15,6 +15,7 @@ A `daa-ocr-cli` (v0.3.2) é a interface em linha de comando do AbbCoLAB para rod
 | **Python 3.9+** | Necessário para rodar a CLI | [python.org/downloads](https://www.python.org/downloads/) |
 | **Tesseract** (obrigatório) | Engine principal de OCR | `apt-get install tesseract-ocr` (Ubuntu/Debian); `brew install tesseract` (macOS); `choco install tesseract` ou MSI (Windows) |
 | **PaddleOCR / EasyOCR (opcionais)** | Engines adicionais de OCR | Instaladas via `pip` pelo extra `all-cpu`; GPU requer builds específicos |
+| **DeepSeek-OCR (opcional)** | Engine OCR via modelo DeepSeek | Repositório DeepSeek-OCR instalado localmente + variável de ambiente com pesos |
 | **(Opcional) GPU** | Aceleração para PaddleOCR/EasyOCR | Instale `torch` ou `paddlepaddle-gpu` compatíveis com sua CUDA |
 
 > **CPU x GPU x CUDA (em linguagem simples)**
@@ -22,7 +23,7 @@ A `daa-ocr-cli` (v0.3.2) é a interface em linha de comando do AbbCoLAB para rod
 > - **GPU:** é a placa de vídeo. Ela tem muitos núcleos e acelera redes neurais (OCR mais rápido).
 > - **CUDA:** é o "driver de aceleração" da NVIDIA que permite a programas (como PyTorch/Paddle) usarem a GPU. Só funciona em GPUs NVIDIA e requer drivers atualizados.
 
-> A CLI já prepara saídas e manifests mesmo sem GPU; o uso de GPU é apenas para acelerar PaddleOCR e EasyOCR.
+> A CLI já prepara saídas e manifests mesmo sem GPU; o uso de GPU é apenas para acelerar PaddleOCR, EasyOCR e DeepSeek-OCR.
 
 ---
 
@@ -113,8 +114,27 @@ daa ocr run \
   --gpu false
 ```
 
-- Saídas por imagem: `*.tess.psmXX.txt`, `*.paddle.txt/.json`, `*.easy.txt/.json`.
+- Saídas por imagem: `*.tess.psmXX.txt`, `*.paddle.txt/.json`, `*.easy.txt/.json`, `*.deepseek.txt/.json` (quando ativado).
 - A CLI grava manifestos CSV/JSONL em `manifests/ocr_manifest.*` por padrão.
+
+### DeepSeek-OCR (opcional)
+O backend DeepSeek-OCR usa o módulo Python **`deepseek_ocr`** e instancia a classe **`DeepSeekOCR`** (ponto de entrada oficial), chamando o método de inferência `infer(...)` para gerar o texto. Para habilitar:
+
+1. Clone/instale o repositório **DeepSeek-OCR** no mesmo ambiente virtual.
+2. Disponibilize o caminho dos pesos localmente com uma das variáveis:
+   - `DEEPSEEK_OCR_MODEL_PATH=/caminho/para/pesos-ou-modelo`
+   - `DEEPSEEK_OCR_WEIGHTS=/caminho/para/pesos-ou-modelo`
+3. Rode a CLI com `--engines deepseek` (ou combinado com outros engines).
+
+Exemplo:
+```bash
+export DEEPSEEK_OCR_MODEL_PATH="$HOME/models/deepseek-ocr"
+daa ocr run \
+  --input-dir data/colecao_01 \
+  --glob "**/*.jpg" \
+  --engines deepseek \
+  --gpu false
+```
 
 ---
 
