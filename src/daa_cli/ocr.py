@@ -135,7 +135,13 @@ def ocr_batch(cfg: OCRConfig) -> Dict[str, Any]:
 
         # DeepSeek-OCR
         if "deepseek" in cfg.engines:
-            res = run_deepseek(img, gpu=cfg.gpu)
+            res = run_deepseek(
+                img,
+                gpu=cfg.gpu,
+                model_path=cfg.deepseek_model_path,
+                weights_path=cfg.deepseek_weights_path,
+                cache_dir=cfg.deepseek_cache_dir,
+            )
             available = res.get("available", False)
             append_csv(manifest_csv, MANIFEST_FIELDS, {
                 "timestamp": datetime.utcnow().isoformat(timespec="seconds")+"Z",

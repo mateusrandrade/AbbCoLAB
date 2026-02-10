@@ -37,7 +37,7 @@ def _safe_import(module: str):
 
 _easyocr_cache: Dict[Tuple[Tuple[str, ...], bool], Any] = {}
 _paddle_cache: Dict[Tuple[bool, str], Any] = {}
-_deepseek_cache: Dict[Tuple[Optional[str], str], Any] = {}
+_deepseek_cache: Dict[Tuple[Optional[str], Optional[str], Optional[str], str], Any] = {}
 
 _EASYOCR_MISSING = (
     "easyocr não instalado. Instale com `pip install -e '.[ocr-easy]'` ou "
@@ -50,13 +50,14 @@ _PADDLE_MISSING = (
 _DEEPSEEK_MISSING = (
     "deepseek_ocr não instalado. Instale as dependências com "
     "`pip install -e '.[ocr-deepseek]'` e configure "
-    "DEEPSEEK_OCR_MODEL_PATH/DEEPSEEK_OCR_WEIGHTS. Requisitos: torch (cu118), "
+    "DEEPSEEK_OCR_MODEL_PATH/DEEPSEEK_OCR_WEIGHTS ou passe "
+    "--deepseek-model-path/--deepseek-weights-path. Requisitos: torch (cu118), "
     "vllm, flash-attn, transformers, tokenizers. "
     "Docs: https://github.com/deepseek-ai/DeepSeek-OCR."
 )
 _DEEPSEEK_MODEL_MISSING = (
-    "DeepSeek-OCR sem caminho de modelo. Defina DEEPSEEK_OCR_MODEL_PATH ou "
-    "DEEPSEEK_OCR_WEIGHTS."
+    "DeepSeek-OCR sem caminho de modelo. Defina DEEPSEEK_OCR_MODEL_PATH, "
+    "DEEPSEEK_OCR_WEIGHTS, --deepseek-model-path ou --deepseek-weights-path."
 )
 
 
@@ -108,7 +109,12 @@ def _select_deepseek_entrypoint(module: Any):
     return None
 
 
-def _build_deepseek_instance(model_path: Optional[str], device: str):
+def _build_deepseek_instance(
+    model_path: Optional[str],
+    weights_path: Optional[str],
+    cache_dir: Optional[str],
+    device: str,
+):
     deepseek_ocr = _safe_import("deepseek_ocr")
     if deepseek_ocr is None:
         return None, _DEEPSEEK_MISSING
@@ -121,10 +127,21 @@ def _build_deepseek_instance(model_path: Optional[str], device: str):
         signature = None
     kwargs = {}
     if signature:
-        if "model_path" in signature.parameters and model_path:
-            kwargs["model_path"] = model_path
+        resolved_model_path = model_path or weights_path
+        if "model_path" in signature.parameters and resolved_model_path:
+            kwargs["model_path"] = resolved_model_path
         if "checkpoint" in signature.parameters and model_path:
             kwargs["checkpoint"] = model_path
+        if "checkpoint" in signature.parameters and weights_path and "checkpoint" not in kwargs:
+            kwargs["checkpoint"] = weights_path
+        if "weights" in signature.parameters and weights_path:
+            kwargs["weights"] = weights_path
+        if "weights_path" in signature.parameters and weights_path:
+            kwargs["weights_path"] = weights_path
+        for cache_param in ("cache_dir", "cache_path", "cache_root", "model_cache_dir"):
+            if cache_param in signature.parameters and cache_dir:
+                kwargs[cache_param] = cache_dir
+                break
         if "device" in signature.parameters:
             kwargs["device"] = device
     try:
@@ -134,15 +151,20 @@ def _build_deepseek_instance(model_path: Optional[str], device: str):
     return instance, ""
 
 
-def _get_deepseek_ocr(model_path: Optional[str], gpu: bool):
+def _get_deepseek_ocr(
+    model_path: Optional[str],
+    weights_path: Optional[str],
+    cache_dir: Optional[str],
+    gpu: bool,
+):
     device = "cuda" if gpu else "cpu"
-    if not model_path:
+    if not model_path and not weights_path:
         return None, _DEEPSEEK_MODEL_MISSING
-    key = (model_path, device)
+    key = (model_path, weights_path, cache_dir, device)
     cached = _deepseek_cache.get(key)
     if cached is not None:
         return cached, ""
-    instance, error = _build_deepseek_instance(model_path, device)
+    instance, error = _build_deepseek_instance(model_path, weights_path, cache_dir, device)
     if instance is None:
         return None, error
     _deepseek_cache[key] = instance
@@ -221,9 +243,19 @@ def run_paddle(image: Path, gpu: bool=False) -> Dict[str, Any]:
     return {"engine":"paddle","available":True,"out_txt":str(txt_path),"out_json":str(json_path)}
 
 
-def run_deepseek(image: Path, gpu: bool=False) -> Dict[str, Any]:
-    model_path = os.environ.get("DEEPSEEK_OCR_MODEL_PATH") or os.environ.get("DEEPSEEK_OCR_WEIGHTS")
-    instance, error = _get_deepseek_ocr(model_path, gpu)
+def run_deepseek(
+    image: Path,
+    gpu: bool=False,
+    model_path: Optional[str] = None,
+    weights_path: Optional[str] = None,
+    cache_dir: Optional[str] = None,
+) -> Dict[str, Any]:
+    resolved_model_path = model_path or os.environ.get("DEEPSEEK_OCR_MODEL_PATH")
+    resolved_weights_path = weights_path or os.environ.get("DEEPSEEK_OCR_WEIGHTS")
+    resolved_cache_dir = cache_dir or os.environ.get("DEEPSEEK_OCR_CACHE_DIR")
+    if resolved_cache_dir:
+        os.environ["DEEPSEEK_OCR_CACHE_DIR"] = resolved_cache_dir
+    instance, error = _get_deepseek_ocr(resolved_model_path, resolved_weights_path, resolved_cache_dir, gpu)
     if instance is None:
         return {"engine":"deepseek","available":False,"error":error or "deepseek_ocr não instalado"}
     infer_fn = _select_deepseek_infer(instance)
@@ -237,5 +269,12 @@ def run_deepseek(image: Path, gpu: bool=False) -> Dict[str, Any]:
     txt_path = image.with_suffix(".deepseek.txt")
     json_path = image.with_suffix(".deepseek.json")
     txt_path.write_text(text_out, encoding="utf-8")
-    write_json(json_path, {"engine":"deepseek","gpu":gpu,"model_path":model_path,"words":words})
+    write_json(json_path, {
+        "engine":"deepseek",
+        "gpu":gpu,
+        "model_path": resolved_model_path,
+        "weights_path": resolved_weights_path,
+        "cache_dir": resolved_cache_dir,
+        "words":words,
+    })
     return {"engine":"deepseek","available":True,"out_txt":str(txt_path),"out_json":str(json_path)}

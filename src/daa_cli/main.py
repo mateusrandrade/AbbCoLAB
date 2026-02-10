@@ -30,12 +30,18 @@ def ocr_run(
     engines: List[str] = typer.Option(["tesseract","paddle","easyocr"], help="tesseract paddle easyocr deepseek"),
     gpu: bool = typer.Option(False, help="Usar GPU (Paddle/EasyOCR/DeepSeek-OCR)"),
     easyocr_langs: List[str] = typer.Option(["pt"], help="Idiomas EasyOCR, ex.: pt en"),
+    deepseek_model_path: str = typer.Option(None, help="Caminho do modelo DeepSeek-OCR"),
+    deepseek_weights_path: str = typer.Option(None, help="Caminho dos pesos/checkpoint DeepSeek-OCR"),
+    deepseek_cache_dir: str = typer.Option(None, help="Diretório de cache do DeepSeek-OCR"),
 ):
     cfg = OCRConfig(
         input_dir=input_dir, glob=glob, lang=lang, oem=oem,
         psm=list(psm), outputs=list(outputs),
         write_manifest=write_manifest, dry_run=dry_run,
-        engines=list(engines), gpu=gpu, easyocr_langs=list(easyocr_langs)
+        engines=list(engines), gpu=gpu, easyocr_langs=list(easyocr_langs),
+        deepseek_model_path=deepseek_model_path,
+        deepseek_weights_path=deepseek_weights_path,
+        deepseek_cache_dir=deepseek_cache_dir,
     )
     res = ocr_batch(cfg)
     rprint(res)
