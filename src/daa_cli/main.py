@@ -27,8 +27,8 @@ def ocr_run(
     outputs: List[str] = typer.Option(["txt"], help="txt/tsv/hocr/pdf"),
     write_manifest: bool = typer.Option(True, help="Grava manifest CSV/JSONL"),
     dry_run: bool = typer.Option(False, help="Apenas simula"),
-    engines: List[str] = typer.Option(["tesseract","paddle","easyocr"], help="tesseract paddle easyocr"),
-    gpu: bool = typer.Option(False, help="Usar GPU (Paddle/EasyOCR)"),
+    engines: List[str] = typer.Option(["tesseract","paddle","easyocr"], help="tesseract paddle easyocr deepseek"),
+    gpu: bool = typer.Option(False, help="Usar GPU (Paddle/EasyOCR/DeepSeek-OCR)"),
     easyocr_langs: List[str] = typer.Option(["pt"], help="Idiomas EasyOCR, ex.: pt en"),
 ):
     cfg = OCRConfig(

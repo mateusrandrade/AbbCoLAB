@@ -5,7 +5,7 @@ from typing import Dict, Any
 from datetime import datetime
 from .config import OCRConfig
 from .utils import discover_images, tesseract_version, sha256_of_file, append_csv, write_jsonl
-from .backends import run_tesseract, run_easyocr, run_paddle
+from .backends import run_tesseract, run_easyocr, run_paddle, run_deepseek
 
 MANIFEST_FIELDS = [
     "timestamp","source_path","source_sha256",
@@ -122,6 +122,40 @@ def ocr_batch(cfg: OCRConfig) -> Dict[str, Any]:
             })
             rows_jsonl.append({
                 "engine": "easyocr",
+                "engine_version": "",
+                "device": "cuda" if cfg.gpu else "cpu",
+                "available": available,
+                "out_txt": res.get("out_txt", ""),
+                "out_json": res.get("out_json", ""),
+                "error": res.get("error", "") if not available else "",
+                "source_path": str(img),
+                "source_sha256": sha
+            })
+            stats["rows"] += 1
+
+        # DeepSeek-OCR
+        if "deepseek" in cfg.engines:
+            res = run_deepseek(img, gpu=cfg.gpu)
+            available = res.get("available", False)
+            append_csv(manifest_csv, MANIFEST_FIELDS, {
+                "timestamp": datetime.utcnow().isoformat(timespec="seconds")+"Z",
+                "source_path": str(img),
+                "source_sha256": sha,
+                "engine": "deepseek",
+                "engine_version": "",
+                "device": "cuda" if cfg.gpu else "cpu",
+                "lang": cfg.lang,
+                "oem": "",
+                "psm": "",
+                "format": "txt",
+                "exit_code": 0 if available else 1,
+                "duration_sec": 0.0,
+                "stderr": "" if available else res.get("error",""),
+                "out_path": res.get("out_txt","") if available else "",
+                "notes": "" if available else "backend ausente"
+            })
+            rows_jsonl.append({
+                "engine": "deepseek",
                 "engine_version": "",
                 "device": "cuda" if cfg.gpu else "cpu",
                 "available": available,

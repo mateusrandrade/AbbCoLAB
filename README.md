@@ -25,7 +25,7 @@ Esses três componentes formam um ciclo contínuo de produção, aprendizado e a
 | **AbbadiaT5** | Modelo de linguagem treinado com dados do AbbCoLAB. | Corrige automaticamente erros típicos de OCR em fontes históricas. |
 
 ### Fluxo geral da pipeline
-1. **Extração** — leitura automática das imagens por múltiplos motores (Tesseract, PaddleOCR, EasyOCR).  
+1. **Extração** — leitura automática das imagens por múltiplos motores (Tesseract, PaddleOCR, EasyOCR, DeepSeek-OCR opcional).  
 2. **Curadoria** — revisão humana e padronização das transcrições em arquivos `*.curator.txt`.  
 3. **Exportação** — criação de conjuntos de dados (`abbadia_train.jsonl`) para treinar o modelo *AbbadiaT5*.  
 4. **Avaliação** — cálculo de métricas de desempenho (CER/WER) e geração de manifestos de proveniência.
