@@ -55,10 +55,20 @@ Essas contribuições alimentam continuamente o modelo AbbadiaT5, aprimorando su
 
 ## Instalação rápida
 
-Para instalar as dependências de runtime e as engines OCR opcionais, use:
+### Ambiente local (CPU)
+
+Para instalar as dependências base (runtime/CPU) e rodar a CLI em modo local:
 
 ```bash
 pip install -r requirements.txt
+```
+
+### VM Google Cloud (GPU)
+
+Para instalar as dependências com suporte a GPU (PaddlePaddle GPU, vLLM, flash-attn), use:
+
+```bash
+pip install -r requirements-gpu.txt --extra-index-url https://download.pytorch.org/whl/cu121
 ```
 
 ## Licença

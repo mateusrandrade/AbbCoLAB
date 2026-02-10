@@ -1,15 +1,25 @@
+# --- Core CLI & Utils ---
 typer>=0.12.3
 rich>=13.7.1
 pydantic>=2.8.2
 pyyaml>=6.0.2
 tqdm>=4.66.4
 jiwer>=3.0.3
-opencv-python>=4.8.0
+
+# --- Processamento de Imagem ---
+# Headless funciona tanto em servidor quanto local, evita erro de GUI
+opencv-python-headless>=4.8.0
+Pillow>=10.0.0
+
+# --- OCRs (Versões Compatíveis CPU) ---
+pytesseract>=0.3.10
 easyocr>=1.7
 paddleocr>=2.7
-paddlepaddle>=2.6; platform_system != 'Windows'
-torch
-vllm
-flash-attn
-transformers
-tokenizers
+
+# Importante: Instalar a versão CPU do Paddle por padrão para dev local
+paddlepaddle>=2.6.0; platform_system != 'Linux'
+
+# Dependências básicas de ML (sem obrigar CUDA)
+transformers>=4.38.0
+tokenizers>=0.15.0
+torch>=2.1.2
