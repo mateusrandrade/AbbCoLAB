@@ -55,7 +55,7 @@ Essas contribuições alimentam continuamente o modelo AbbadiaT5, aprimorando su
 
 ## Instalação rápida
 
-Para instalar as dependências de runtime, use:
+Para instalar as dependências de runtime e as engines OCR opcionais, use:
 
 ```bash
 pip install -r requirements.txt
