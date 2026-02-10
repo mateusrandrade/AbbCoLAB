@@ -53,6 +53,24 @@ Essas contribuições alimentam continuamente o modelo AbbadiaT5, aprimorando su
 
 > AbbCoLAB é uma iniciativa vinculada ao projeto “Do Arquivo ao Algoritmo”, dedicada à preservação, digitalização e interpretação automatizada de fontes históricas, com base em práticas colaborativas, éticas e reprodutíveis.
 
+## Instalação rápida
+
+### Ambiente local (CPU)
+
+Para instalar as dependências base (runtime/CPU) e rodar a CLI em modo local:
+
+```bash
+pip install -r requirements.txt
+```
+
+### VM Google Cloud (GPU)
+
+Para instalar as dependências com suporte a GPU (PaddlePaddle GPU, vLLM, flash-attn), use:
+
+```bash
+pip install -r requirements-gpu.txt --extra-index-url https://download.pytorch.org/whl/cu121
+```
+
 ## Licença
 
 Este repositório é distribuído sob a licença MIT.

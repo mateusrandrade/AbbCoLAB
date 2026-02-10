@@ -1,0 +1,19 @@
+# 1. Instala primeiro as dependências base
+-r requirements.txt
+
+# 2. Sobrescreve/Adiciona Força Bruta para GPU
+
+# PaddlePaddle com suporte a CUDA (Essencial para performance)
+# Nota: --upgrade garante que substitua a versão CPU se tiver sido instalada
+paddlepaddle-gpu>=2.6.0
+
+# VLLM: Engine de inferência otimizada para o DeepSeek
+vllm>=0.4.0
+
+# Aceleração de Hardware (Flash Attention 2)
+# Nota: Isso muitas vezes requer compilação e demora alguns minutos para instalar
+flash-attn>=2.5.0
+
+# Bibliotecas auxiliares para aceleração
+accelerate>=0.27.0
+xformers>=0.0.23
