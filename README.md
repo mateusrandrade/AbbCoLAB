@@ -53,6 +53,14 @@ Essas contribuições alimentam continuamente o modelo AbbadiaT5, aprimorando su
 
 > AbbCoLAB é uma iniciativa vinculada ao projeto “Do Arquivo ao Algoritmo”, dedicada à preservação, digitalização e interpretação automatizada de fontes históricas, com base em práticas colaborativas, éticas e reprodutíveis.
 
+## Instalação rápida
+
+Para instalar as dependências de runtime e as engines OCR opcionais, use:
+
+```bash
+pip install -r requirements.txt
+```
+
 ## Licença
 
 Este repositório é distribuído sob a licença MIT.
