@@ -39,6 +39,26 @@ _easyocr_cache: Dict[Tuple[Tuple[str, ...], bool], Any] = {}
 _paddle_cache: Dict[Tuple[bool, str], Any] = {}
 _deepseek_cache: Dict[Tuple[Optional[str], str], Any] = {}
 
+_EASYOCR_MISSING = (
+    "easyocr não instalado. Instale com `pip install -e '.[ocr-easy]'` ou "
+    "`pip install easyocr`. Docs: https://github.com/JaidedAI/EasyOCR."
+)
+_PADDLE_MISSING = (
+    "paddleocr não instalado. Instale com `pip install -e '.[ocr-paddle]'` ou "
+    "`pip install paddleocr paddlepaddle`. Docs: https://www.paddleocr.ai."
+)
+_DEEPSEEK_MISSING = (
+    "deepseek_ocr não instalado. Instale as dependências com "
+    "`pip install -e '.[ocr-deepseek]'` e configure "
+    "DEEPSEEK_OCR_MODEL_PATH/DEEPSEEK_OCR_WEIGHTS. Requisitos: torch (cu118), "
+    "vllm, flash-attn, transformers, tokenizers. "
+    "Docs: https://github.com/deepseek-ai/DeepSeek-OCR."
+)
+_DEEPSEEK_MODEL_MISSING = (
+    "DeepSeek-OCR sem caminho de modelo. Defina DEEPSEEK_OCR_MODEL_PATH ou "
+    "DEEPSEEK_OCR_WEIGHTS."
+)
+
 
 def clear_easyocr_cache() -> None:
     _easyocr_cache.clear()
@@ -91,7 +111,7 @@ def _select_deepseek_entrypoint(module: Any):
 def _build_deepseek_instance(model_path: Optional[str], device: str):
     deepseek_ocr = _safe_import("deepseek_ocr")
     if deepseek_ocr is None:
-        return None, "deepseek_ocr não instalado"
+        return None, _DEEPSEEK_MISSING
     entrypoint = _select_deepseek_entrypoint(deepseek_ocr)
     if entrypoint is None:
         return None, "deepseek_ocr sem entrypoint suportado"
@@ -116,6 +136,8 @@ def _build_deepseek_instance(model_path: Optional[str], device: str):
 
 def _get_deepseek_ocr(model_path: Optional[str], gpu: bool):
     device = "cuda" if gpu else "cpu"
+    if not model_path:
+        return None, _DEEPSEEK_MODEL_MISSING
     key = (model_path, device)
     cached = _deepseek_cache.get(key)
     if cached is not None:
@@ -162,7 +184,7 @@ def run_easyocr(image: Path, langs: List[str], gpu: bool=False) -> Dict[str, Any
     langs_key = tuple(langs)
     reader = _get_easyocr_reader(langs_key, gpu)
     if reader is None:
-        return {"engine":"easyocr","available":False,"error":"easyocr não instalado"}
+        return {"engine":"easyocr","available":False,"error":_EASYOCR_MISSING}
     result = reader.readtext(str(image), detail=1)  # [ [bbox, text, conf], ... ]
     words = []
     lines = []
@@ -180,7 +202,7 @@ def run_easyocr(image: Path, langs: List[str], gpu: bool=False) -> Dict[str, Any
 def run_paddle(image: Path, gpu: bool=False) -> Dict[str, Any]:
     ocr = _get_paddle_ocr(gpu, "pt")
     if ocr is None:
-        return {"engine":"paddle","available":False,"error":"paddleocr não instalado"}
+        return {"engine":"paddle","available":False,"error":_PADDLE_MISSING}
     result = ocr.ocr(str(image), cls=True)
     words = []
     lines = []

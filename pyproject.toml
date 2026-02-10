@@ -27,6 +27,13 @@ ocr-paddle = [
     "paddleocr>=2.7",
     "paddlepaddle>=2.6; platform_system != 'Windows'",
 ]
+ocr-deepseek = [
+    "torch",
+    "vllm",
+    "flash-attn",
+    "transformers",
+    "tokenizers",
+]
 
 [project.scripts]
 daa = "daa_cli.main:app"

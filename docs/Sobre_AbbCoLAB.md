@@ -63,6 +63,7 @@ Saídas:
 ## GPU (opcional)
 - **EasyOCR (PyTorch)**: instale `torch` compatível com sua CUDA (site do PyTorch).
 - **PaddleOCR**: `paddlepaddle-gpu==<versão>` conforme sua CUDA (docs do Paddle). Use `daa ocr run --gpu true`.
+- **DeepSeek-OCR**: dependências oficiais incluem `torch` (cu118), `vllm`, `flash-attn`, `transformers` e `tokenizers`. Sugestão: `pip install -e ".[ocr-deepseek]"` e instale o PyTorch CUDA 11.8 via <https://download.pytorch.org/whl/cu118>.
 
 ## Docker/Devcontainer
 Ambiente reprodutível:

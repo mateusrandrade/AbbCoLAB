@@ -15,7 +15,7 @@ A `daa-ocr-cli` (v0.3.2) é a interface em linha de comando do AbbCoLAB para rod
 | **Python 3.9+** | Necessário para rodar a CLI | [python.org/downloads](https://www.python.org/downloads/) |
 | **Tesseract** (obrigatório) | Engine principal de OCR | `apt-get install tesseract-ocr` (Ubuntu/Debian); `brew install tesseract` (macOS); `choco install tesseract` ou MSI (Windows) |
 | **PaddleOCR / EasyOCR (opcionais)** | Engines adicionais de OCR | Instaladas via `pip` pelo extra `all-cpu`; GPU requer builds específicos |
-| **DeepSeek-OCR (opcional)** | Engine OCR via modelo DeepSeek | Repositório DeepSeek-OCR instalado localmente + variável de ambiente com pesos |
+| **DeepSeek-OCR (opcional)** | Engine OCR via modelo DeepSeek | Depende de `torch` (cu118), `vllm`, `flash-attn`, `transformers` e `tokenizers` |
 | **(Opcional) GPU** | Aceleração para PaddleOCR/EasyOCR | Instale `torch` ou `paddlepaddle-gpu` compatíveis com sua CUDA |
 
 > **CPU x GPU x CUDA (em linguagem simples)**
@@ -120,11 +120,13 @@ daa ocr run \
 ### DeepSeek-OCR (opcional)
 O backend DeepSeek-OCR usa o módulo Python **`deepseek_ocr`** e instancia a classe **`DeepSeekOCR`** (ponto de entrada oficial), chamando o método de inferência `infer(...)` para gerar o texto. Para habilitar:
 
-1. Clone/instale o repositório **DeepSeek-OCR** no mesmo ambiente virtual.
-2. Disponibilize o caminho dos pesos localmente com uma das variáveis:
+1. Instale as dependências oficiais: `torch` (cu118), `vllm`, `flash-attn`, `transformers` e `tokenizers`.
+   - Sugestão: `pip install -e '.[ocr-deepseek]'` + instale o PyTorch CUDA 11.8 em <https://download.pytorch.org/whl/cu118>.
+2. Clone/instale o repositório **DeepSeek-OCR** no mesmo ambiente virtual (módulo `deepseek_ocr`).
+3. Disponibilize o caminho dos pesos localmente com uma das variáveis:
    - `DEEPSEEK_OCR_MODEL_PATH=/caminho/para/pesos-ou-modelo`
    - `DEEPSEEK_OCR_WEIGHTS=/caminho/para/pesos-ou-modelo`
-3. Rode a CLI com `--engines deepseek` (ou combinado com outros engines).
+4. Rode a CLI com `--engines deepseek` (ou combinado com outros engines).
 
 Exemplo:
 ```bash
