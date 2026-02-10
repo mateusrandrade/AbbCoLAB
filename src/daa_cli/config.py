@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 from pydantic import BaseModel
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 OutputFmt = Literal["txt","tsv","hocr","pdf"]
 
@@ -18,6 +18,9 @@ class OCRConfig(BaseModel):
     engines: List[str] = ["tesseract","paddle","easyocr"]
     gpu: bool = False
     easyocr_langs: List[str] = ["pt"]
+    deepseek_model_path: Optional[str] = None
+    deepseek_weights_path: Optional[str] = None
+    deepseek_cache_dir: Optional[str] = None
 
 class ExportConfig(BaseModel):
     input_dir: str

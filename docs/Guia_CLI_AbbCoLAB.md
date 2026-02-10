@@ -123,18 +123,35 @@ O backend DeepSeek-OCR usa o módulo Python **`deepseek_ocr`** e instancia a cla
 1. Instale as dependências oficiais: `torch` (cu118), `vllm`, `flash-attn`, `transformers` e `tokenizers`.
    - Sugestão: `pip install -e '.[ocr-deepseek]'` + instale o PyTorch CUDA 11.8 em <https://download.pytorch.org/whl/cu118>.
 2. Clone/instale o repositório **DeepSeek-OCR** no mesmo ambiente virtual (módulo `deepseek_ocr`).
-3. Disponibilize o caminho dos pesos localmente com uma das variáveis:
-   - `DEEPSEEK_OCR_MODEL_PATH=/caminho/para/pesos-ou-modelo`
-   - `DEEPSEEK_OCR_WEIGHTS=/caminho/para/pesos-ou-modelo`
+3. Disponibilize o caminho dos pesos localmente com uma das opções:
+   - Variáveis de ambiente:
+     - `DEEPSEEK_OCR_MODEL_PATH=/caminho/para/pesos-ou-modelo`
+     - `DEEPSEEK_OCR_WEIGHTS=/caminho/para/pesos-ou-modelo`
+   - Flags da CLI:
+     - `--deepseek-model-path /caminho/para/pesos-ou-modelo`
+     - `--deepseek-weights-path /caminho/para/pesos-ou-modelo`
+     - `--deepseek-cache-dir /caminho/para/cache`
 4. Rode a CLI com `--engines deepseek` (ou combinado com outros engines).
 
-Exemplo:
+Exemplo (via variáveis de ambiente):
 ```bash
 export DEEPSEEK_OCR_MODEL_PATH="$HOME/models/deepseek-ocr"
 daa ocr run \
   --input-dir data/colecao_01 \
   --glob "**/*.jpg" \
   --engines deepseek \
+  --gpu false
+```
+
+Exemplo (via CLI, com paths reais):
+```bash
+daa ocr run \
+  --input-dir data/colecao_01 \
+  --glob "**/*.jpg" \
+  --engines deepseek \
+  --deepseek-model-path /home/usuario/models/deepseek-ocr \
+  --deepseek-weights-path /home/usuario/models/deepseek-ocr/weights/pytorch_model.bin \
+  --deepseek-cache-dir /mnt/ssd/cache/deepseek-ocr \
   --gpu false
 ```
 
