@@ -89,7 +89,6 @@ def test_run_paddle_reuses_cached_instance(monkeypatch, tmp_path):
     monkeypatch.setattr(backends, "_safe_import", fake_import)
 
     backends.clear_paddle_cache()
-
     result_one = backends.run_paddle(image, gpu=True)
     result_two = backends.run_paddle(image, gpu=True)
 
@@ -103,3 +102,24 @@ def test_run_paddle_reuses_cached_instance(monkeypatch, tmp_path):
     assert len(instantiation_args) == 2, "cache clear should force new PaddleOCR"
 
     backends.clear_paddle_cache()
+
+
+def test_run_deepseek_gpu_requires_cuda_and_deps(monkeypatch, tmp_path):
+    image = _create_image(tmp_path, "sample_deepseek.png")
+
+    def fake_import(module: str):
+        if module in {"torch", "vllm", "flash_attn"}:
+            return None
+        return None
+
+    monkeypatch.setattr(backends, "_safe_import", fake_import)
+
+    result = backends.run_deepseek(
+        image,
+        gpu=True,
+        model_path="/tmp/deepseek-model",
+    )
+
+    assert result["available"] is False
+    assert "Passo a passo oficial" in result["error"]
+    assert "CUDA" in result["error"]

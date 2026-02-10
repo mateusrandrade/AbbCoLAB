@@ -59,6 +59,18 @@ _DEEPSEEK_MODEL_MISSING = (
     "DeepSeek-OCR sem caminho de modelo. Defina DEEPSEEK_OCR_MODEL_PATH, "
     "DEEPSEEK_OCR_WEIGHTS, --deepseek-model-path ou --deepseek-weights-path."
 )
+_DEEPSEEK_GPU_MISSING_TEMPLATE = (
+    "DeepSeek-OCR (GPU) indisponível: {missing}. Passo a passo oficial:\n"
+    "1. Instale as dependências oficiais: torch (cu118), vllm, flash-attn, "
+    "transformers e tokenizers. Sugestão: `pip install -e '.[ocr-deepseek]'` "
+    "+ instale o PyTorch CUDA 11.8 em https://download.pytorch.org/whl/cu118.\n"
+    "2. Clone/instale o repositório DeepSeek-OCR no mesmo ambiente virtual "
+    "(módulo `deepseek_ocr`).\n"
+    "3. Disponibilize o caminho dos pesos com DEEPSEEK_OCR_MODEL_PATH/"
+    "DEEPSEEK_OCR_WEIGHTS ou com --deepseek-model-path/--deepseek-weights-path/"
+    "--deepseek-cache-dir.\n"
+    "4. Rode a CLI com `--engines deepseek`."
+)
 
 
 def clear_easyocr_cache() -> None:
@@ -150,6 +162,27 @@ def _build_deepseek_instance(
         return None, f"falha ao inicializar DeepSeek-OCR: {exc}"
     return instance, ""
 
+def _check_deepseek_gpu_support() -> Optional[str]:
+    missing = []
+    torch = _safe_import("torch")
+    if torch is None:
+        missing.append("torch (cu118)")
+        missing.append("CUDA")
+    else:
+        try:
+            if not torch.cuda.is_available():
+                missing.append("CUDA")
+        except Exception:
+            missing.append("CUDA")
+    if _safe_import("vllm") is None:
+        missing.append("vllm")
+    if _safe_import("flash_attn") is None:
+        missing.append("flash-attn")
+    if missing:
+        missing_list = ", ".join(sorted(set(missing)))
+        return _DEEPSEEK_GPU_MISSING_TEMPLATE.format(missing=missing_list)
+    return None
+
 
 def _get_deepseek_ocr(
     model_path: Optional[str],
@@ -158,6 +191,10 @@ def _get_deepseek_ocr(
     gpu: bool,
 ):
     device = "cuda" if gpu else "cpu"
+    if gpu:
+        gpu_error = _check_deepseek_gpu_support()
+        if gpu_error:
+            return None, gpu_error
     if not model_path and not weights_path:
         return None, _DEEPSEEK_MODEL_MISSING
     key = (model_path, weights_path, cache_dir, device)
